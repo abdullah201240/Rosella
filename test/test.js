@@ -62,20 +62,20 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 
 const FILE_NAME = "auto_commit.txt";
-const MIN_COMMITS_PER_DAY = 1;
+const MIN_COMMITS_PER_DAY = 5;
 const MAX_COMMITS_PER_DAY = 10;
 const TOTAL_DAYS = 30; // June has 30 days
 
 for (let day = 1; day <= TOTAL_DAYS; day++) {
   const commitCount = Math.floor(Math.random() * (MAX_COMMITS_PER_DAY - MIN_COMMITS_PER_DAY + 1)) + MIN_COMMITS_PER_DAY;
 
-  console.log(`\n📅 June ${day}, 2024 - ${commitCount} commits`);
+  console.log(`\n📅 July ${day}, 2024 - ${commitCount} commits`);
 
   for (let commitNum = 1; commitNum <= commitCount; commitNum++) {
-    const commitDate = new Date(`2024-06-${String(day).padStart(2, "0")}T${String(commitNum + 10).padStart(2, "0")}:00:00`);
+    const commitDate = new Date(`2024-07-${String(day).padStart(2, "0")}T${String(commitNum + 10).padStart(2, "0")}:00:00`);
 
     // Modify file to ensure change
-    fs.writeFileSync(FILE_NAME, `Commit on June ${day}, 2024 - #${commitNum} at ${commitDate.toISOString()}`);
+    fs.writeFileSync(FILE_NAME, `Commit on July ${day}, 2024 - #${commitNum} at ${commitDate.toISOString()}`);
 
     try {
       // Set commit date environment variables
@@ -83,11 +83,11 @@ for (let day = 1; day <= TOTAL_DAYS; day++) {
 
       // Run Git commands
       execSync("git add .");
-      execSync(`${gitEnv} git commit -m "Commit #${commitNum} on June ${day}, 2024"`, { stdio: "inherit" });
+      execSync(`${gitEnv} git commit -m "Commit #${commitNum} on July ${day}, 2024"`, { stdio: "inherit" });
 
-      console.log(`✅ Commit #${commitNum} for June ${day} created.`);
+      console.log(`✅ Commit #${commitNum} for July ${day} created.`);
     } catch (error) {
-      console.error(`❌ Error on commit #${commitNum} for June ${day}:`, error.message);
+      console.error(`❌ Error on commit #${commitNum} for July ${day}:`, error.message);
       break;
     }
   }
