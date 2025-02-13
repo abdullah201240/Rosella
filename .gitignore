@@ -1,0 +1,50 @@
+# Ignore system files
+*.log
+*.cache
+*.bak
+*.swp
+*.swo
+
+# Ignore environment and configuration files
+.env
+.env.local
+.env.*.local
+*.env
+*.ini
+*.DS_Store
+
+# Ignore vendor directory (if using Composer)
+vendor/
+
+# Ignore node_modules (if using frontend tools like npm/yarn)
+node_modules/
+
+# Ignore IDE/editor-specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore compiled PHP files
+*.compiled
+
+# Ignore debug and error logs
+error_log
+php_errors.log
+
+# Ignore uploads and temporary files
+uploads/
+storage/
+tmp/
+cache/
+sessions/
+
+# Ignore database files (if using SQLite)
+*.sqlite
+*.sqlite3
+*.sql
+
+# Ignore dependency lock files (optional)
+composer.lock
+package-lock.json
+yarn.lock

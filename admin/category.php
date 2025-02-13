@@ -14,7 +14,6 @@ if(!isset($_SESSION['admin'])){
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start();
 include '../db.php';  // Ensure this file properly connects to the database
 
 // Check if form is submitted
@@ -39,9 +38,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $targetFilePath = $targetDir . $newFileName;
 
       // Allowed file types
-      $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+      $allowedTypes = ['jpg', 'jpeg', 'png', 'gif','webp'];
       if (!in_array($imageFileType, $allowedTypes)) {
-          die("Error: Only JPG, JPEG, PNG, and GIF files are allowed.");
+          die("Error: Only JPG, JPEG, PNG, webp and GIF files are allowed.");
       }
 
       // Move uploaded file

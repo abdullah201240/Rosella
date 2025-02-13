@@ -1,3 +1,32 @@
+<?php
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Include the database connection
+include '../db.php';
+
+// Start the session
+session_start();
+
+// Generate a unique session ID if it doesn't exist
+if (!isset($_SESSION['session_id'])) {
+    $_SESSION['session_id'] = session_id();
+}
+
+// Fetch cart data from the database
+$session_id = $_SESSION['session_id'];
+$sql_cart = "SELECT * FROM carts WHERE session_id = '$session_id'";
+$result_cart = $conn->query($sql_cart);
+
+// Calculate subtotal
+$subtotal = 0;
+while ($cart_item = $result_cart->fetch_assoc()) {
+    $subtotal += $cart_item['product_price'] * $cart_item['quantity'];
+}
+$total = $subtotal; // Assuming no taxes or shipping for now
+?>
+
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -29,66 +58,8 @@
         <div class="loader"></div>
     </div>
 
-    <!-- Humberger Begin -->
-    <div class="humberger__menu__overlay"></div>
-    <div class="humberger__menu__wrapper">
-        <div class="humberger__menu__logo">
-            <a href="#"><img src="img/logo.png" alt=""></a>
-        </div>
-        <div class="humberger__menu__cart">
-            <ul>
-                <li><a href="#"><i class="fa fa-heart"></i> <span>1</span></a></li>
-                <li><a href="#"><i class="fa fa-shopping-bag"></i> <span>3</span></a></li>
-            </ul>
-            <div class="header__cart__price">item: <span>$150.00</span></div>
-        </div>
-        <div class="humberger__menu__widget">
-            <div class="header__top__right__language">
-                <img src="img/language.png" alt="">
-                <div>English</div>
-                <span class="arrow_carrot-down"></span>
-                <ul>
-                    <li><a href="#">Spanis</a></li>
-                    <li><a href="#">English</a></li>
-                </ul>
-            </div>
-            <div class="header__top__right__auth">
-                <a href="#"><i class="fa fa-user"></i> Login</a>
-            </div>
-        </div>
-        <nav class="humberger__menu__nav mobile-menu">
-            <ul>
-                <li class="active"><a href="./index.php">Home</a></li>
-                <li><a href="./shop-grid.php">Shop</a></li>
-                <li><a href="#">Pages</a>
-                    <ul class="header__menu__dropdown">
-                        <li><a href="./shop-details.php">Shop Details</a></li>
-                        <li><a href="./shoping-cart.php">Shoping Cart</a></li>
-                        <li><a href="./checkout.php">Check Out</a></li>
-                    </ul>
-                </li>
-                <li><a href="./contact.php">Contact</a></li>
-            </ul>
-        </nav>
-        <div id="mobile-menu-wrap"></div>
-        <div class="header__top__right__social">
-            <a href="#"><i class="fa fa-facebook"></i></a>
-            <a href="#"><i class="fa fa-twitter"></i></a>
-            <a href="#"><i class="fa fa-linkedin"></i></a>
-            <a href="#"><i class="fa fa-pinterest-p"></i></a>
-        </div>
-        <div class="humberger__menu__contact">
-            <ul>
-                <li><i class="fa fa-envelope"></i> hello@colorlib.com</li>
-                <li>Free Shipping for all Order of $99</li>
-            </ul>
-        </div>
-    </div>
-    <!-- Humberger End -->
-
     <!-- Header Section Begin -->
     <header class="header">
-        
         <div class="container">
             <div class="row">
                 <div class="col-lg-3">
@@ -98,21 +69,14 @@
                 </div>
                 <div class="col-lg-6">
                     <nav class="header__menu">
-                    <ul>
+                        <ul>
                             <li class="active"><a href="./index.php">Home</a></li>
                             <li><a href="./shop-grid.php">Shop</a></li>
-                            
-                               
-                                    
-                                    <li><a href="./shoping-cart.php">Shoping Cart</a></li>
-                                    
-                              
-                           
+                            <li><a href="./shoping-cart.php">Shoping Cart</a></li>
                             <li><a href="./contact.php">Contact</a></li>
                         </ul>
                     </nav>
                 </div>
-                
             </div>
             <div class="humberger__open">
                 <i class="fa fa-bars"></i>
@@ -121,9 +85,6 @@
     </header>
     <!-- Header Section End -->
 
-    
-    <!-- Hero Section End -->
-
     <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-section set-bg" data-setbg="img/Frame3.png">
         <div class="container">
@@ -131,10 +92,6 @@
                 <div class="col-lg-12 text-center">
                     <div class="breadcrumb__text">
                         <h2>Shopping Cart</h2>
-                        <div class="breadcrumb__option">
-                            <a href="./index.php">Home</a>
-                            <span>Shopping Cart</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -155,106 +112,56 @@
                                     <th>Price</th>
                                     <th>Quantity</th>
                                     <th>Total</th>
-                                    <th></th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td class="shoping__cart__item">
-                                        <img src="img/cart/cart-1.jpg" alt="">
-                                        <h5>Vegetable’s Package</h5>
-                                    </td>
-                                    <td class="shoping__cart__price">
-                                        $55.00
-                                    </td>
-                                    <td class="shoping__cart__quantity">
-                                        <div class="quantity">
-                                            <div class="pro-qty">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="shoping__cart__total">
-                                        $110.00
-                                    </td>
-                                    <td class="shoping__cart__item__close">
-                                        <span class="icon_close"></span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="shoping__cart__item">
-                                        <img src="img/cart/cart-2.jpg" alt="">
-                                        <h5>Fresh Garden Vegetable</h5>
-                                    </td>
-                                    <td class="shoping__cart__price">
-                                        $39.00
-                                    </td>
-                                    <td class="shoping__cart__quantity">
-                                        <div class="quantity">
-                                            <div class="pro-qty">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="shoping__cart__total">
-                                        $39.99
-                                    </td>
-                                    <td class="shoping__cart__item__close">
-                                        <span class="icon_close"></span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="shoping__cart__item">
-                                        <img src="img/cart/cart-3.jpg" alt="">
-                                        <h5>Organic Bananas</h5>
-                                    </td>
-                                    <td class="shoping__cart__price">
-                                        $69.00
-                                    </td>
-                                    <td class="shoping__cart__quantity">
-                                        <div class="quantity">
-                                            <div class="pro-qty">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="shoping__cart__total">
-                                        $69.99
-                                    </td>
-                                    <td class="shoping__cart__item__close">
-                                        <span class="icon_close"></span>
-                                    </td>
-                                </tr>
+                                <?php if ($result_cart->num_rows > 0): ?>
+                                    <?php $result_cart->data_seek(0); // Reset pointer ?>
+                                    <?php while ($cart_item = $result_cart->fetch_assoc()): ?>
+                                        <tr>
+                                            <td class="shoping__cart__item">
+                                                <img src="../uploads/<?php echo $cart_item['product_image']; ?>" alt="<?php echo $cart_item['product_name']; ?>" style="width: 50px; height: 50px;">
+                                                <h5><?php echo $cart_item['product_name']; ?></h5>
+                                            </td>
+                                            <td class="shoping__cart__price">
+                                                ৳<?php echo $cart_item['product_price']; ?>
+                                            </td>
+                                            <td class="shoping__cart__quantity">
+                                                <div class="quantity">
+                                                    <div class="pro-qty">
+                                                        <input type="text" value="<?php echo $cart_item['quantity']; ?>" data-cart-id="<?php echo $cart_item['id']; ?>">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="shoping__cart__total">
+                                                ৳<?php echo $cart_item['product_price'] * $cart_item['quantity']; ?>
+                                            </td>
+                                            <td class="shoping__cart__item__close">
+                                                <form method="POST" action="remove-from-cart.php">
+                                                    <input type="hidden" name="cart_id" value="<?php echo $cart_item['id']; ?>">
+                                                    <button type="submit" class="btn btn-danger">Remove</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="5">Your cart is empty.</td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-12">
-                    <div class="shoping__cart__btns">
-                        <a href="#" class="primary-btn cart-btn">CONTINUE SHOPPING</a>
-                        <a href="#" class="primary-btn cart-btn cart-btn-right"><span class="icon_loading"></span>
-                            Upadate Cart</a>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="shoping__continue">
-                        <div class="shoping__discount">
-                            <h5>Discount Codes</h5>
-                            <form action="#">
-                                <input type="text" placeholder="Enter your coupon code">
-                                <button type="submit" class="site-btn">APPLY COUPON</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
                 <div class="col-lg-6">
                     <div class="shoping__checkout">
                         <h5>Cart Total</h5>
                         <ul>
-                            <li>Subtotal <span>$454.98</span></li>
-                            <li>Total <span>$454.98</span></li>
+                            <li>Subtotal <span>৳<?php echo $subtotal; ?></span></li>
+                            <li>Total <span>৳<?php echo $total; ?></span></li>
                         </ul>
                         <a href="#" class="primary-btn">PROCEED TO CHECKOUT</a>
                     </div>
@@ -265,13 +172,13 @@
     <!-- Shoping Cart Section End -->
 
     <!-- Footer Section Begin -->
-    <footer class="footer spad">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer__about">
-                        <div class="footer__about__logo">
-                            <a href="./index.php"><img src="img/logo.png" alt=""></a>
+    <footer class='footer spad'>
+        <div class='container'>
+            <div class='row'>
+                <div class='col-lg-3 col-md-6 col-sm-6'>
+                    <div class='footer__about'>
+                        <div class='footer__about__logo'>
+                            <a href='./index.php'><img src='img/logo1.png' alt=''></a>
                         </div>
                         <ul>
                             <li>Address: 60-49 Road 11378 New York</li>
@@ -280,51 +187,40 @@
                         </ul>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 offset-lg-1">
-                    <div class="footer__widget">
+                <div class='col-lg-4 col-md-6 col-sm-6 offset-lg-1'>
+                    <div class='footer__widget'>
                         <h6>Useful Links</h6>
                         <ul>
-                            <li><a href="#">About Us</a></li>
-                            <li><a href="#">About Our Shop</a></li>
-                            <li><a href="#">Secure Shopping</a></li>
-                            <li><a href="#">Delivery infomation</a></li>
-                            <li><a href="#">Privacy Policy</a></li>
-                            <li><a href="#">Our Sitemap</a></li>
-                        </ul>
-                        <ul>
-                            <li><a href="#">Who We Are</a></li>
-                            <li><a href="#">Our Services</a></li>
-                            <li><a href="#">Projects</a></li>
-                            <li><a href="#">Contact</a></li>
-                            <li><a href="#">Innovation</a></li>
-                            <li><a href="#">Testimonials</a></li>
+                            <li><a href='#'>Home</a></li>
+                            <li><a href='#'>Cart</a></li>
+                            <li><a href='#'>Contact</a></li>
                         </ul>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-12">
-                    <div class="footer__widget">
-                        <h6>Join Our Newsletter Now</h6>
-                        <p>Get E-mail updates about our latest shop and special offers.</p>
-                        <form action="#">
-                            <input type="text" placeholder="Enter your mail">
-                            <button type="submit" class="site-btn">Subscribe</button>
-                        </form>
-                        <div class="footer__widget__social">
-                            <a href="#"><i class="fa fa-facebook"></i></a>
-                            <a href="#"><i class="fa fa-instagram"></i></a>
-                            <a href="#"><i class="fa fa-twitter"></i></a>
-                            <a href="#"><i class="fa fa-pinterest"></i></a>
+                <div class='col-lg-4 col-md-12'>
+                    <div class='footer__widget'>
+                        <h6>Contact Information</h6>
+                        <p>We welcome your feedback on our customer service, merchandise, website, or any other topics
+                            you wish to share with us. Your comments and suggestions are greatly appreciated.</p>
+                        <div class='footer__widget__social'>
+                            <a href='#'><i class='fa fa-facebook'></i></a>
+                            <a href='#'><i class='fa fa-instagram'></i></a>
+                            <a href='#'><i class='fa fa-twitter'></i></a>
+                            <a href='#'><i class='fa fa-pinterest'></i></a>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="footer__copyright">
-                        <div class="footer__copyright__text"><p><!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-  Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="fa fa-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
-  <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p></div>
-                        <div class="footer__copyright__payment"><img src="img/payment-item.png" alt=""></div>
+            <div class='row'>
+                <div class='col-lg-12'>
+                    <div class='footer__copyright'>
+                        <div class='footer__copyright__text'>
+                            <p>
+                                Copyright &copy;
+                                <script>document.write(new Date().getFullYear());
+                                </script> All rights reserved </a>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -342,7 +238,54 @@
     <script src="js/owl.carousel.min.js"></script>
     <script src="js/main.js"></script>
 
+    <!-- Custom Script for Quantity Update -->
+ <script>
+    $(document).ready(function() {
+        // Initialize quantity buttons
+        $('.pro-qty').each(function() {
+            var $this = $(this),
+                $input = $this.find('input[type="text"]'),
+                $increase = $this.find('.inc'),
+                $decrease = $this.find('.dec');
 
+            $increase.on('click', function() {
+                var currentVal = parseInt($input.val());
+                if (!isNaN(currentVal)) {
+                    $input.val(currentVal + 1).trigger('change');
+                }
+            });
+
+            $decrease.on('click', function() {
+                var currentVal = parseInt($input.val());
+                if (!isNaN(currentVal) && currentVal > 1) {
+                    $input.val(currentVal - 1).trigger('change');
+                }
+            });
+        });
+
+        // Handle quantity change
+        $('.pro-qty input').on('change', function() {
+            let quantity = $(this).val();
+            let cartId = $(this).data('cart-id');
+
+            // Send AJAX request to update quantity
+            $.ajax({
+                url: 'update-cart-quantity.php',
+                method: 'POST',
+                data: {
+                    cart_id: cartId,
+                    quantity: quantity
+                },
+                success: function(response) {
+                    location.reload(); // Refresh the page to reflect changes
+                },
+                error: function(xhr, status, error) {
+                    alert('Failed to update quantity. Please try again.');
+                }
+            });
+        });
+    });
+</script>
 </body>
 
 </html>

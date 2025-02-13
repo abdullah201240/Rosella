@@ -3,6 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
+
 if(!isset($_SESSION['admin'])){
     header("location: login.php");
     exit;
@@ -13,7 +14,6 @@ if(!isset($_SESSION['admin'])){
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start();
 include '../db.php';
 // Handle Delete Request
 if (isset($_GET['delete_id'])) {
@@ -25,7 +25,7 @@ if (isset($_GET['delete_id'])) {
 
     $deleteQuery = "DELETE FROM categories WHERE id = $id";
     if (mysqli_query($conn, $deleteQuery)) {
-        echo "<script>alert('Category Deleted'); window.location.href='catagoryTable.php';</script>";
+        echo "<script>alert('Category Deleted'); window.location.href='categoryTable.php';</script>";
     } else {
         echo "Error deleting record: " . mysqli_error($conn);
     }
