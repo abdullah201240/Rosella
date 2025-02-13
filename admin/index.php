@@ -1,14 +1,13 @@
 <?php
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
-
-// Check if the user is logged in
-if (!isset($_SESSION['admin_email']) || $_SESSION['admin_email'] !== true) {
-    // Redirect to login page
-    header("Location: login.php");
+if(!isset($_SESSION['admin'])){
+    header("location: login.php");
     exit;
-}
+  }
+include("../db.php");
 ?>
 
 
