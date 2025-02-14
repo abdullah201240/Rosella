@@ -181,9 +181,9 @@ $total = $subtotal; // Assuming no taxes or shipping for now
                             <a href='./index.php'><img src='img/logo1.png' alt=''></a>
                         </div>
                         <ul>
-                            <li>Address: 60-49 Road 11378 New York</li>
-                            <li>Phone: +65 11.188.888</li>
-                            <li>Email: hello@colorlib.com</li>
+                            <li>Address: Dhaka</li>
+                            <li>Phone: 01800000000000</li>
+                            <li>Email: hello.rosella54@gmail.com</li>
                         </ul>
                     </div>
                 </div>
