@@ -127,26 +127,44 @@ $result = mysqli_query($conn, $query);
             </div>
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
   <div class="sidebar-content">
-    <ul class="nav nav-secondary">
-      <li class="nav-item active">
+  <ul class="nav nav-secondary">
+    <li class="nav-item active">
         <a href="./index.php" class="collapsed" aria-expanded="false">
-          <i class="fas fa-home"></i>
-          <p>Dashboard</p>
+            <i class="fas fa-tachometer-alt"></i>
+            <p>Dashboard</p>
         </a>
-      </li>
-      <li class="nav-item active">
+    </li>
+    <li class="nav-item active">
         <a href="./category.php" class="collapsed" aria-expanded="false">
-          <i class="fas fa-tags"></i>
-          <p>Add Category</p>
+            <i class="fas fa-plus-circle"></i>
+            <p>Add Category</p>
         </a>
-      </li>
-      <li class="nav-item active">
+    </li>
+    <li class="nav-item active">
         <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-          <i class="fas fa-tags"></i>
-          <p>All Category</p>
+            <i class="fas fa-th-list"></i>
+            <p>All Categories</p>
         </a>
-      </li>
-    </ul>
+    </li>
+    <li class="nav-item active">
+        <a href="./addProducts.php" class="collapsed" aria-expanded="false">
+            <i class="fas fa-plus-square"></i>
+            <p>Add Product</p>
+        </a>
+    </li>
+    <li class="nav-item active">
+        <a href="./productTable.php" class="collapsed" aria-expanded="false">
+            <i class="fas fa-boxes"></i>
+            <p>All Products</p>
+        </a>
+    </li>
+    <li class="nav-item active">
+        <a href="./allOrder.php" class="collapsed" aria-expanded="false">
+            <i class="fas fa-shopping-cart"></i>
+            <p>All Orders</p>
+        </a>
+    </li>
+</ul>
   </div>
 </div>
         </div>
@@ -179,14 +197,7 @@ $result = mysqli_query($conn, $query);
                     <div class="container-fluid">
                         <nav
                             class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <button type="submit" class="btn btn-search pe-1">
-                                        <i class="fa fa-search search-icon"></i>
-                                    </button>
-                                </div>
-                                <input type="text" placeholder="Search ..." class="form-control" />
-                            </div>
+                            
                         </nav>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">

@@ -57,17 +57,21 @@ $result = $conn->query($sql);
         .table-container {
             width: 100%;
             overflow: auto;
-            max-height: 600px; /* Adjust height as needed */
+            max-height: 600px;
+            /* Adjust height as needed */
             border: 1px solid #dee2e6;
         }
 
         .table {
-            min-width: 1200px; /* Ensure the table has a minimum width */
+            min-width: 1200px;
+            /* Ensure the table has a minimum width */
             width: 100%;
         }
 
-        .table th, .table td {
-            white-space: nowrap; /* Prevent text wrapping */
+        .table th,
+        .table td {
+            white-space: nowrap;
+            /* Prevent text wrapping */
         }
     </style>
 </head>
@@ -80,7 +84,8 @@ $result = $conn->query($sql);
                 <!-- Logo Header -->
                 <div class="logo-header" data-background-color="dark">
                     <a href="index.php" class="logo">
-                        <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+                        <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
+                            width="100" />
                     </a>
                     <div class="nav-toggle">
                         <button class="btn btn-toggle toggle-sidebar">
@@ -101,20 +106,38 @@ $result = $conn->query($sql);
                     <ul class="nav nav-secondary">
                         <li class="nav-item active">
                             <a href="./index.php" class="collapsed" aria-expanded="false">
-                                <i class="fas fa-home"></i>
+                                <i class="fas fa-tachometer-alt"></i>
                                 <p>Dashboard</p>
                             </a>
                         </li>
                         <li class="nav-item active">
                             <a href="./category.php" class="collapsed" aria-expanded="false">
-                                <i class="fas fa-tags"></i>
+                                <i class="fas fa-plus-circle"></i>
                                 <p>Add Category</p>
                             </a>
                         </li>
                         <li class="nav-item active">
                             <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-                                <i class="fas fa-tags"></i>
-                                <p>All Category</p>
+                                <i class="fas fa-th-list"></i>
+                                <p>All Categories</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./addProducts.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-plus-square"></i>
+                                <p>Add Product</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./productTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-boxes"></i>
+                                <p>All Products</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./allOrder.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>All Orders</p>
                             </a>
                         </li>
                     </ul>
@@ -129,7 +152,8 @@ $result = $conn->query($sql);
                     <!-- Logo Header -->
                     <div class="logo-header" data-background-color="dark">
                         <a href="index.php" class="logo">
-                            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+                            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
+                                width="100" />
                         </a>
                         <div class="nav-toggle">
                             <button class="btn btn-toggle toggle-sidebar">
@@ -148,20 +172,15 @@ $result = $conn->query($sql);
                 <!-- Navbar Header -->
                 <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
                     <div class="container-fluid">
-                        <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <button type="submit" class="btn btn-search pe-1">
-                                        <i class="fa fa-search search-icon"></i>
-                                    </button>
-                                </div>
-                                <input type="text" placeholder="Search ..." class="form-control" />
-                            </div>
+                        <nav
+                            class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
+
                         </nav>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
                             <li class="nav-item topbar-icon dropdown hidden-caret d-flex d-lg-none">
-                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" aria-haspopup="true">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
+                                    aria-expanded="false" aria-haspopup="true">
                                     <i class="fa fa-search"></i>
                                 </a>
                                 <ul class="dropdown-menu dropdown-search animated fadeIn">
@@ -174,7 +193,8 @@ $result = $conn->query($sql);
                             </li>
 
                             <li class="nav-item topbar-user dropdown hidden-caret">
-                                <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
+                                <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#"
+                                    aria-expanded="false">
                                     <div class="avatar-sm">
                                         <img src="assets/img/profile.jpg" alt="..." class="avatar-img rounded-circle" />
                                     </div>
@@ -211,6 +231,7 @@ $result = $conn->query($sql);
                                 <th>Order Notes</th>
                                 <th>Total Amount</th>
                                 <th>Products</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -246,10 +267,21 @@ $result = $conn->query($sql);
                                         echo "Invalid product data.";
                                     }
 
-                                    echo "</td></tr>";
+                                    echo "</td>
+                                            <td>
+                                                <select class='form-select status-dropdown' data-order-id='" . $row['id'] . "'>
+                                                    <option value='pending' " . ($row['status'] == 'pending' ? 'selected' : '') . ">Pending</option>
+                                                    <option value='handover' " . ($row['status'] == 'handover' ? 'selected' : '') . ">Handover to Delivery Man</option>
+                                                    <option value='on_the_way' " . ($row['status'] == 'on_the_way' ? 'selected' : '') . ">On the Way</option>
+                                                    <option value='completed' " . ($row['status'] == 'completed' ? 'selected' : '') . ">Completed</option>
+                                                    <option value='canceled' " . ($row['status'] == 'canceled' ? 'selected' : '') . ">Canceled</option>
+
+                                                </select>
+                                            </td>
+                                        </tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='13'>No orders found.</td></tr>";
+                                echo "<tr><td colspan='14'>No orders found.</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -262,6 +294,38 @@ $result = $conn->query($sql);
         <script src="assets/js/kaiadmin.min.js"></script>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Add jQuery for AJAX -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+        <script>
+            $(document).ready(function () {
+                $('.status-dropdown').on('change', function () {
+                    var orderId = $(this).data('order-id');
+                    var newStatus = $(this).val();
+
+                    $.ajax({
+                        url: 'update_order_status.php',
+                        type: 'POST',
+                        data: {
+                            order_id: orderId,
+                            status: newStatus
+                        },
+                        success: function (response) {
+                            if (response == 'success') {
+                                alert('Status updated successfully!');
+                            } else {
+                                alert('Failed to update status.');
+                            }
+                        },
+                        error: function () {
+                            alert('An error occurred while updating the status.');
+                        }
+                    });
+                });
+            });
+        </script>
+    </div>
 </body>
 
 </html>
