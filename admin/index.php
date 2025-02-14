@@ -134,6 +134,12 @@ $transactionsResult = mysqli_query($conn, $transactionsQuery);
                                 <p>Contact Messages</p>
                             </a>
                         </li>
+                        <li class="nav-item active">
+        <a href="./logout.php" class="collapsed" aria-expanded="false">
+            <i class="fas fa-sign-out-alt"></i>
+            <p>Logout</p>
+        </a>
+    </li>
           </ul>
 
         </div>

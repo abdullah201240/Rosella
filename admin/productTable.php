@@ -129,7 +129,7 @@ $result = mysqli_query($conn, $query);
             </div>
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
                 <div class="sidebar-content">
-                <ul class="nav nav-secondary">
+                    <ul class="nav nav-secondary">
                         <li class="nav-item active">
                             <a href="./index.php" class="collapsed" aria-expanded="false">
                                 <i class="fas fa-tachometer-alt"></i>
@@ -170,6 +170,12 @@ $result = mysqli_query($conn, $query);
                             <a href="./contactTable.php" class="collapsed" aria-expanded="false">
                                 <i class="fas fa-envelope"></i>
                                 <p>Contact Messages</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./logout.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <p>Logout</p>
                             </a>
                         </li>
                     </ul>
@@ -216,17 +222,17 @@ $result = mysqli_query($conn, $query);
                                     aria-expanded="false" aria-haspopup="true">
                                     <i class="fa fa-search"></i>
                                 </a>
-                                
+
                             </li>
 
                             <li class="nav-item topbar-user dropdown hidden-caret">
                                 <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#"
                                     aria-expanded="false">
-                                    
+
                                     <span class="profile-username">
                                         <span class="op-7">Hi,</span>
                                         <span class="fw-bold"><?php echo $_SESSION['admin_name'] ?></php></span>
-                                        </span>
+                                    </span>
                                 </a>
                             </li>
                         </ul>
