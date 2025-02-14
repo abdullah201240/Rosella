@@ -45,7 +45,7 @@
                 <div class="col-lg-6">
                     <nav class="header__menu">
                     <ul>
-                            <li class="active"><a href="./index.php">Home</a></li>
+                            <li><a href="./index.php">Home</a></li>
                             <li><a href="./shop-grid.php">Shop</a></li>
                             
                                
@@ -54,7 +54,7 @@
                                     
                               
                            
-                            <li><a href="./contact.php">Contact</a></li>
+                            <li class="active"><a href="./contact.php">Contact</a></li>
                         </ul>
                     </nav>
                 </div>
@@ -152,20 +152,20 @@
                     </div>
                 </div>
             </div>
-            <form action="#">
-                <div class="row">
-                    <div class="col-lg-6 col-md-6">
-                        <input type="text" placeholder="Your name">
-                    </div>
-                    <div class="col-lg-6 col-md-6">
-                        <input type="text" placeholder="Your Email">
-                    </div>
-                    <div class="col-lg-12 text-center">
-                        <textarea placeholder="Your message"></textarea>
-                        <button type="submit" class="site-btn">SEND MESSAGE</button>
-                    </div>
-                </div>
-            </form>
+            <form action="submit_contact.php" method="POST">
+    <div class="row">
+        <div class="col-lg-6 col-md-6">
+            <input type="text" name="name" placeholder="Your name" required>
+        </div>
+        <div class="col-lg-6 col-md-6">
+            <input type="email" name="email" placeholder="Your Email" required>
+        </div>
+        <div class="col-lg-12 text-center">
+            <textarea name="message" placeholder="Your message" required></textarea>
+            <button type="submit" class="site-btn">SEND MESSAGE</button>
+        </div>
+    </div>
+</form>
         </div>
     </div>
     <!-- Contact Form End -->

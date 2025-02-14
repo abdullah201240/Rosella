@@ -7,12 +7,17 @@ if (!isset($_SESSION['admin'])) {
     header("location: login.php");
     exit;
 }
+?>
+
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 include '../db.php';
 
-// Fetch all orders from the database
-$sql = "SELECT * FROM orders";
-$result = $conn->query($sql);
+// Fetch Contact Data
+$query = "SELECT * FROM contacts"; // Assuming the table name is `contacts`
+$result = mysqli_query($conn, $query);
 ?>
 
 <!DOCTYPE html>
@@ -51,29 +56,6 @@ $result = $conn->query($sql);
 
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link rel="stylesheet" href="assets/css/demo.css" />
-
-    <style>
-        /* Custom CSS for scrollable table */
-        .table-container {
-            width: 100%;
-            overflow: auto;
-            max-height: 600px;
-            /* Adjust height as needed */
-            border: 1px solid #dee2e6;
-        }
-
-        .table {
-            min-width: 1200px;
-            /* Ensure the table has a minimum width */
-            width: 100%;
-        }
-
-        .table th,
-        .table td {
-            white-space: nowrap;
-            /* Prevent text wrapping */
-        }
-    </style>
 </head>
 
 <body>
@@ -84,8 +66,7 @@ $result = $conn->query($sql);
                 <!-- Logo Header -->
                 <div class="logo-header" data-background-color="dark">
                     <a href="index.php" class="logo">
-                        <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
-                            width="100" />
+                        <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
                     </a>
                     <div class="nav-toggle">
                         <button class="btn btn-toggle toggle-sidebar">
@@ -158,8 +139,7 @@ $result = $conn->query($sql);
                     <!-- Logo Header -->
                     <div class="logo-header" data-background-color="dark">
                         <a href="index.php" class="logo">
-                            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
-                                width="100" />
+                            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
                         </a>
                         <div class="nav-toggle">
                             <button class="btn btn-toggle toggle-sidebar">
@@ -178,9 +158,7 @@ $result = $conn->query($sql);
                 <!-- Navbar Header -->
                 <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
                     <div class="container-fluid">
-                        <nav
-                            class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-
+                        <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
                         </nav>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
@@ -217,120 +195,36 @@ $result = $conn->query($sql);
             </div>
 
             <div class="container mt-16">
-                <h2 class="text-center">Order Management</h2>
+                <h2 class="text-center">Contact Messages</h2>
 
-                <!-- Scrollable Table Container -->
-                <div class="table-container">
-                    <table class="table table-bordered">
-                        <thead>
+                <table class="table table-bordered mt-4">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Message</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = mysqli_fetch_assoc($result)) { ?>
                             <tr>
-                                <th>Order ID</th>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Country</th>
-                                <th>Address</th>
-                                <th>City</th>
-                                <th>State</th>
-                                <th>Postcode</th>
-                                <th>Phone</th>
-                                <th>Email</th>
-                                <th>Order Notes</th>
-                                <th>Total Amount</th>
-                                <th>Products</th>
-                                <th>Status</th>
+                                <td><?php echo $row['id']; ?></td>
+                                <td><?php echo $row['name']; ?></td>
+                                <td><?php echo $row['email']; ?></td>
+                                <td><?php echo $row['message']; ?></td>
+                                <td><?php echo $row['created_at']; ?></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            if ($result->num_rows > 0) {
-                                while ($row = $result->fetch_assoc()) {
-                                    echo "<tr>
-                                            <td>" . $row['id'] . "</td>
-                                            <td>" . htmlspecialchars($row['first_name']) . "</td>
-                                            <td>" . htmlspecialchars($row['last_name']) . "</td>
-                                            <td>" . htmlspecialchars($row['country']) . "</td>
-                                            <td>" . htmlspecialchars($row['address']) . " " . htmlspecialchars($row['address2']) . "</td>
-                                            <td>" . htmlspecialchars($row['city']) . "</td>
-                                            <td>" . htmlspecialchars($row['state']) . "</td>
-                                            <td>" . htmlspecialchars($row['postcode']) . "</td>
-                                            <td>" . htmlspecialchars($row['phone']) . "</td>
-                                            <td>" . htmlspecialchars($row['email']) . "</td>
-                                            <td>" . htmlspecialchars($row['order_notes']) . "</td>
-                                            <td>" . number_format($row['total_amount'], 2) . "</td>
-                                            <td>";
-
-                                    // Decode the JSON string to an array
-                                    $products = json_decode($row['products'], true);
-
-                                    // Check if decoding was successful
-                                    if (is_array($products)) {
-                                        echo "<ul>";
-                                        foreach ($products as $product) {
-                                            echo "<li>" . htmlspecialchars($product['product_name']) . " - Quantity: " . htmlspecialchars($product['quantity']) . " - Price: " . number_format($product['product_price'], 2) . "</li>";
-                                        }
-                                        echo "</ul>";
-                                    } else {
-                                        echo "Invalid product data.";
-                                    }
-
-                                    echo "</td>
-                                            <td>
-                                                <select class='form-select status-dropdown' data-order-id='" . $row['id'] . "'>
-                                                    <option value='pending' " . ($row['status'] == 'pending' ? 'selected' : '') . ">Pending</option>
-                                                    <option value='handover' " . ($row['status'] == 'handover' ? 'selected' : '') . ">Handover to Delivery Man</option>
-                                                    <option value='on_the_way' " . ($row['status'] == 'on_the_way' ? 'selected' : '') . ">On the Way</option>
-                                                    <option value='completed' " . ($row['status'] == 'completed' ? 'selected' : '') . ">Completed</option>
-                                                    <option value='canceled' " . ($row['status'] == 'canceled' ? 'selected' : '') . ">Canceled</option>
-
-                                                </select>
-                                            </td>
-                                        </tr>";
-                                }
-                            } else {
-                                echo "<tr><td colspan='14'>No orders found.</td></tr>";
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
+                        <?php } ?>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- Kaiadmin JS -->
         <script src="assets/js/kaiadmin.min.js"></script>
-
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-        <!-- Add jQuery for AJAX -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-        <script>
-            $(document).ready(function () {
-                $('.status-dropdown').on('change', function () {
-                    var orderId = $(this).data('order-id');
-                    var newStatus = $(this).val();
-
-                    $.ajax({
-                        url: 'update_order_status.php',
-                        type: 'POST',
-                        data: {
-                            order_id: orderId,
-                            status: newStatus
-                        },
-                        success: function (response) {
-                            if (response == 'success') {
-                                alert('Status updated successfully!');
-                            } else {
-                                alert('Failed to update status.');
-                            }
-                        },
-                        error: function () {
-                            alert('An error occurred while updating the status.');
-                        }
-                    });
-                });
-            });
-        </script>
     </div>
 </body>
 

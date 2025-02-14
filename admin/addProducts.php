@@ -147,44 +147,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
                 <div class="sidebar-content">
-                <ul class="nav nav-secondary">
-    <li class="nav-item active">
-        <a href="./index.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-tachometer-alt"></i>
-            <p>Dashboard</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./category.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-circle"></i>
-            <p>Add Category</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-th-list"></i>
-            <p>All Categories</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./addProducts.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-square"></i>
-            <p>Add Product</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./productTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-boxes"></i>
-            <p>All Products</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./allOrder.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-shopping-cart"></i>
-            <p>All Orders</p>
-        </a>
-    </li>
-</ul>
+                    <ul class="nav nav-secondary">
+                        <li class="nav-item active">
+                            <a href="./index.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./category.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-plus-circle"></i>
+                                <p>Add Category</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-th-list"></i>
+                                <p>All Categories</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./addProducts.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-plus-square"></i>
+                                <p>Add Product</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./productTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-boxes"></i>
+                                <p>All Products</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./allOrder.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>All Orders</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./contactTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-envelope"></i>
+                                <p>Contact Messages</p>
+                            </a>
+                        </li>
+                    </ul>
 
                 </div>
             </div>
@@ -304,7 +310,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <option value="">Select a category</option>
                                                 <?php foreach ($categories as $category): ?>
                                                     <option value="<?php echo $category['id']; ?>">
-                                                        <?php echo htmlspecialchars($category['name']); ?></option>
+                                                        <?php echo htmlspecialchars($category['name']); ?>
+                                                    </option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>

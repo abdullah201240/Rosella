@@ -4,10 +4,10 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 
-if(!isset($_SESSION['admin'])){
+if (!isset($_SESSION['admin'])) {
     header("location: login.php");
     exit;
-  }
+}
 ?>
 
 <?php
@@ -109,7 +109,8 @@ $result = mysqli_query($conn, $query);
                 <!-- Logo Header -->
                 <div class="logo-header" data-background-color="dark">
                     <a href="index.php" class="logo">
-                    <img  src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+                        <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
+                            width="100" />
                     </a>
                     <div class="nav-toggle">
                         <button class="btn btn-toggle toggle-sidebar">
@@ -126,47 +127,53 @@ $result = mysqli_query($conn, $query);
                 <!-- End Logo Header -->
             </div>
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
-  <div class="sidebar-content">
-  <ul class="nav nav-secondary">
-    <li class="nav-item active">
-        <a href="./index.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-tachometer-alt"></i>
-            <p>Dashboard</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./category.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-circle"></i>
-            <p>Add Category</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-th-list"></i>
-            <p>All Categories</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./addProducts.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-square"></i>
-            <p>Add Product</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./productTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-boxes"></i>
-            <p>All Products</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./allOrder.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-shopping-cart"></i>
-            <p>All Orders</p>
-        </a>
-    </li>
-</ul>
-  </div>
-</div>
+                <div class="sidebar-content">
+                    <ul class="nav nav-secondary">
+                        <li class="nav-item active">
+                            <a href="./index.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./category.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-plus-circle"></i>
+                                <p>Add Category</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-th-list"></i>
+                                <p>All Categories</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./addProducts.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-plus-square"></i>
+                                <p>Add Product</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./productTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-boxes"></i>
+                                <p>All Products</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./allOrder.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>All Orders</p>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="./contactTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-envelope"></i>
+                                <p>Contact Messages</p>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <!-- End Sidebar -->
 
@@ -176,7 +183,8 @@ $result = mysqli_query($conn, $query);
                     <!-- Logo Header -->
                     <div class="logo-header" data-background-color="dark">
                         <a href="index.php" class="logo">
-                        <img  src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+                            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80"
+                                width="100" />
                         </a>
                         <div class="nav-toggle">
                             <button class="btn btn-toggle toggle-sidebar">
@@ -197,7 +205,7 @@ $result = mysqli_query($conn, $query);
                     <div class="container-fluid">
                         <nav
                             class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-                            
+
                         </nav>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
@@ -238,66 +246,73 @@ $result = mysqli_query($conn, $query);
             </div>
 
             <div class="container mt-16">
-    <h2 class="text-center">Category Management</h2>
+                <h2 class="text-center">Category Management</h2>
 
-    <table class="table table-bordered mt-4">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Category Name</th>
-                <th>Image</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($row = mysqli_fetch_assoc($result)) { ?>
-                <tr>
-                    <td><?php echo $row['id']; ?></td>
-                    <td><?php echo $row['name']; ?></td>
-                    <td><img src="../uploads/<?php echo $row['image']; ?>" alt="Category Image" width="50" height="50"></td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal<?php echo $row['id']; ?>">Edit</button>
-                        <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
-                    </td>
-                </tr>
+                <table class="table table-bordered mt-4">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Category Name</th>
+                            <th>Image</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = mysqli_fetch_assoc($result)) { ?>
+                            <tr>
+                                <td><?php echo $row['id']; ?></td>
+                                <td><?php echo $row['name']; ?></td>
+                                <td><img src="../uploads/<?php echo $row['image']; ?>" alt="Category Image" width="50"
+                                        height="50"></td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#editModal<?php echo $row['id']; ?>">Edit</button>
+                                    <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Are you sure?')">Delete</a>
+                                </td>
+                            </tr>
 
-                <!-- Edit Modal -->
-                <div class="modal fade" id="editModal<?php echo $row['id']; ?>" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Edit Category</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal<?php echo $row['id']; ?>" tabindex="-1"
+                                aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Category</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form action="" method="POST" enctype="multipart/form-data">
+                                                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Category Name:</label>
+                                                    <input type="text" class="form-control" name="name"
+                                                        value="<?php echo $row['name']; ?>" required>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Current Image:</label>
+                                                    <img src="../uploads/<?php echo $row['image']; ?>" width="100"
+                                                        class="d-block mb-2">
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload New Image:</label>
+                                                    <input type="file" class="form-control" name="image">
+                                                </div>
+
+                                                <button type="submit" name="update" class="btn btn-success">Update</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="modal-body">
-                                <form action="" method="POST" enctype="multipart/form-data">
-                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Category Name:</label>
-                                        <input type="text" class="form-control" name="name" value="<?php echo $row['name']; ?>" required>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Current Image:</label>
-                                        <img src="../uploads/<?php echo $row['image']; ?>" width="100" class="d-block mb-2">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Upload New Image:</label>
-                                        <input type="file" class="form-control" name="image">
-                                    </div>
-
-                                    <button type="submit" name="update" class="btn btn-success">Update</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php } ?>
-        </tbody>
-    </table>
-</div>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            </div>
 
 
         </div>

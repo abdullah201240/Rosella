@@ -128,6 +128,12 @@ $transactionsResult = mysqli_query($conn, $transactionsQuery);
                 <p>All Orders</p>
               </a>
             </li>
+            <li class="nav-item active">
+                            <a href="./contactTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-envelope"></i>
+                                <p>Contact Messages</p>
+                            </a>
+                        </li>
           </ul>
 
         </div>

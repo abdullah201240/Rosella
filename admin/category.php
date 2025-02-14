@@ -3,10 +3,10 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
-if(!isset($_SESSION['admin'])){
-    header("location: login.php");
-    exit;
-  }
+if (!isset($_SESSION['admin'])) {
+  header("location: login.php");
+  exit;
+}
 ?>
 
 
@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   // Handle file upload
   $targetDir = "../uploads/";  // Ensure this directory exists
   if (!file_exists($targetDir)) {
-      mkdir($targetDir, 0777, true);  // Create if not exists
+    mkdir($targetDir, 0777, true);  // Create if not exists
   }
 
   $image = $_FILES['file'];
@@ -32,23 +32,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   // Validate and process image upload
   if (!empty($image['name'])) {
-      $imageName = basename($image['name']);
-      $imageFileType = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
-      $newFileName = uniqid() . '.' . $imageFileType;  // Unique name
-      $targetFilePath = $targetDir . $newFileName;
+    $imageName = basename($image['name']);
+    $imageFileType = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
+    $newFileName = uniqid() . '.' . $imageFileType;  // Unique name
+    $targetFilePath = $targetDir . $newFileName;
 
-      // Allowed file types
-      $allowedTypes = ['jpg', 'jpeg', 'png', 'gif','webp'];
-      if (!in_array($imageFileType, $allowedTypes)) {
-          die("Error: Only JPG, JPEG, PNG, webp and GIF files are allowed.");
-      }
+    // Allowed file types
+    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    if (!in_array($imageFileType, $allowedTypes)) {
+      die("Error: Only JPG, JPEG, PNG, webp and GIF files are allowed.");
+    }
 
-      // Move uploaded file
-      if (move_uploaded_file($image['tmp_name'], $targetFilePath)) {
-          $imageFilePath = $newFileName; // Save filename in DB
-      } else {
-          die("Error: Failed to upload image.");
-      }
+    // Move uploaded file
+    if (move_uploaded_file($image['tmp_name'], $targetFilePath)) {
+      $imageFilePath = $newFileName; // Save filename in DB
+    } else {
+      die("Error: Failed to upload image.");
+    }
   }
 
   // Insert into database
@@ -56,9 +56,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $stmt->bind_param("ss", $categoryName, $imageFilePath);
 
   if ($stmt->execute()) {
-      echo "New category added successfully";
+    echo "New category added successfully";
   } else {
-      echo "Error: " . $stmt->error;
+    echo "Error: " . $stmt->error;
   }
 
   // Close resources
@@ -117,7 +117,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Logo Header -->
         <div class="logo-header" data-background-color="dark">
           <a href="index.php" class="logo">
-            <img  src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
           </a>
           <div class="nav-toggle">
             <button class="btn btn-toggle toggle-sidebar">
@@ -135,44 +135,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       </div>
       <div class="sidebar-wrapper scrollbar scrollbar-inner">
         <div class="sidebar-content">
-        <ul class="nav nav-secondary">
-    <li class="nav-item active">
-        <a href="./index.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-tachometer-alt"></i>
-            <p>Dashboard</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./category.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-circle"></i>
-            <p>Add Category</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-th-list"></i>
-            <p>All Categories</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./addProducts.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-plus-square"></i>
-            <p>Add Product</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./productTable.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-boxes"></i>
-            <p>All Products</p>
-        </a>
-    </li>
-    <li class="nav-item active">
-        <a href="./allOrder.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-shopping-cart"></i>
-            <p>All Orders</p>
-        </a>
-    </li>
-</ul>
+          <ul class="nav nav-secondary">
+            <li class="nav-item active">
+              <a href="./index.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-tachometer-alt"></i>
+                <p>Dashboard</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./category.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-plus-circle"></i>
+                <p>Add Category</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-th-list"></i>
+                <p>All Categories</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./addProducts.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-plus-square"></i>
+                <p>Add Product</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./productTable.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-boxes"></i>
+                <p>All Products</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./allOrder.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-shopping-cart"></i>
+                <p>All Orders</p>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="./contactTable.php" class="collapsed" aria-expanded="false">
+                <i class="fas fa-envelope"></i>
+                <p>Contact Messages</p>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -184,7 +190,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <!-- Logo Header -->
           <div class="logo-header" data-background-color="dark">
             <a href="index.php" class="logo">
-              <img  src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
+              <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
             </a>
             <div class="nav-toggle">
               <button class="btn btn-toggle toggle-sidebar">
@@ -204,11 +210,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
           <div class="container-fluid">
             <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-              
+
             </nav>
 
             <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
-              
+
 
 
 

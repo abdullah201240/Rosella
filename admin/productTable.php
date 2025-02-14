@@ -166,6 +166,12 @@ $result = mysqli_query($conn, $query);
                                 <p>All Orders</p>
                             </a>
                         </li>
+                        <li class="nav-item active">
+                            <a href="./contactTable.php" class="collapsed" aria-expanded="false">
+                                <i class="fas fa-envelope"></i>
+                                <p>Contact Messages</p>
+                            </a>
+                        </li>
                     </ul>
 
                 </div>
@@ -210,13 +216,7 @@ $result = mysqli_query($conn, $query);
                                     aria-expanded="false" aria-haspopup="true">
                                     <i class="fa fa-search"></i>
                                 </a>
-                                <ul class="dropdown-menu dropdown-search animated fadeIn">
-                                    <form class="navbar-left navbar-form nav-search">
-                                        <div class="input-group">
-                                            <input type="text" placeholder="Search ..." class="form-control" />
-                                        </div>
-                                    </form>
-                                </ul>
+                                
                             </li>
 
                             <li class="nav-item topbar-user dropdown hidden-caret">

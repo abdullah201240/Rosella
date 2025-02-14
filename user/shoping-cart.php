@@ -70,9 +70,9 @@ $total = $subtotal; // Assuming no taxes or shipping for now
                 <div class="col-lg-6">
                     <nav class="header__menu">
                         <ul>
-                            <li class="active"><a href="./index.php">Home</a></li>
+                            <li ><a href="./index.php">Home</a></li>
                             <li><a href="./shop-grid.php">Shop</a></li>
-                            <li><a href="./shoping-cart.php">Shoping Cart</a></li>
+                            <li class="active"><a href="./shoping-cart.php">Shoping Cart</a></li>
                             <li><a href="./contact.php">Contact</a></li>
                         </ul>
                     </nav>
