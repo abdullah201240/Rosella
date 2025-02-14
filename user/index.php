@@ -145,23 +145,30 @@ function sanitizeCategoryName($name)
         <div class='container'>
             <div class='row'>
                 <div class='categories__slider owl-carousel'>
-                    <?php if ($result->num_rows > 0): ?>
-                        <?php while ($row = $result->fetch_assoc()): ?>
-                            <div class='col-lg-3'>
-                                <div class='categories__item set-bg' data-setbg="../uploads/<?php echo $row['image']; ?>">
-                                    <h5><a href='#'>
-                                            <?php echo $row['name'];
-                                            ?>
-                                        </a></h5>
-                                </div>
-                            </div>
-                        <?php endwhile;
-                        ?>
-                    <?php else: ?>
-                        <p>No categories found.</p>
-                    <?php endif;
-                    ?>
+    <?php if ($result->num_rows > 0): ?>
+        <?php while ($row = $result->fetch_assoc()): ?>
+            <div class='col-lg-3'>
+            <a href='shop-grid.php?category_id=<?php echo $row['id']; ?>'>
+
+                <div class='categories__item set-bg' data-setbg="../uploads/<?php echo $row['image']; ?>">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; margin: 0; padding: 0;">
+
+                <h5 style="background-color: white; width: 80%; height: 40px; text-align: center; display: flex; justify-content: center; align-items: center;">
+                        
+                            <?php echo $row['name']; ?>
+                            
+                    </h5>
+                    </div>
+
                 </div>
+                </a>
+
+            </div>
+        <?php endwhile; ?>
+    <?php else: ?>
+        <p>No categories found.</p>
+    <?php endif; ?>
+</div>
             </div>
         </div>
     </section>
