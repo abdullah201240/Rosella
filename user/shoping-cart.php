@@ -163,7 +163,7 @@ $total = $subtotal; // Assuming no taxes or shipping for now
                             <li>Subtotal <span>৳<?php echo $subtotal; ?></span></li>
                             <li>Total <span>৳<?php echo $total; ?></span></li>
                         </ul>
-                        <a href="#" class="primary-btn">PROCEED TO CHECKOUT</a>
+                        <a href="checkout.php" class="primary-btn">PROCEED TO CHECKOUT</a>
                     </div>
                 </div>
             </div>
