@@ -1,38 +1,15 @@
-
 <?php
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// Include the database connection
 include '../db.php';
-
-// Start the session
 session_start();
 
-// Allow guest checkout; no forced login here
-
-// Generate a unique session ID if it doesn't exist
-if (!isset($_SESSION['session_id'])) {
-    $_SESSION['session_id'] = session_id();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php?redirect=' . urlencode('profile.php'));
+    exit();
 }
 
-// Fetch cart data from the database
-$session_id = $_SESSION['session_id'];
-$sql_cart = "SELECT * FROM carts WHERE session_id = '$session_id'";
-$result_cart = $conn->query($sql_cart);
-
-// Initialize $cart_items array
-$cart_items = [];
-
-// Calculate subtotal and populate $cart_items
-$subtotal = 0;
-while ($cart_item = $result_cart->fetch_assoc()) {
-    $cart_items[] = $cart_item; // Add each cart item to the $cart_items array
-    $subtotal += $cart_item['product_price'] * $cart_item['quantity'];
-}
-$total_amount = $subtotal; // Assuming no taxes or shipping for now
-// Ensure user_profiles table exists
+// Ensure profile table exists
 $conn->query("CREATE TABLE IF NOT EXISTS user_profiles (
     user_id INT PRIMARY KEY,
     first_name VARCHAR(100) NULL,
@@ -49,33 +26,50 @@ $conn->query("CREATE TABLE IF NOT EXISTS user_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 )");
 
-// Fetch saved profile for prefill
-$profile = null;
-if (isset($_SESSION['user_id'])) {
-    $uid = (int)$_SESSION['user_id'];
-    $resProfile = $conn->query("SELECT * FROM user_profiles WHERE user_id = $uid LIMIT 1");
-    if ($resProfile && $resProfile->num_rows === 1) {
-        $profile = $resProfile->fetch_assoc();
+$uid = (int)$_SESSION['user_id'];
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
+    $country = trim($_POST['country'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $address2 = trim($_POST['address2'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $state = trim($_POST['state'] ?? '');
+    $postcode = trim($_POST['postcode'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+
+    $sql = "INSERT INTO user_profiles (user_id, first_name, last_name, country, address, address2, city, state, postcode, phone, email)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE first_name=VALUES(first_name), last_name=VALUES(last_name), country=VALUES(country), address=VALUES(address), address2=VALUES(address2), city=VALUES(city), state=VALUES(state), postcode=VALUES(postcode), phone=VALUES(phone), email=VALUES(email)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('issssssssss', $uid, $first_name, $last_name, $country, $address, $address2, $city, $state, $postcode, $phone, $email);
+    if ($stmt->execute()) {
+        $message = 'Profile updated successfully.';
+    } else {
+        $message = 'Failed to update profile. Please try again.';
     }
+    $stmt->close();
+}
+
+// Load profile data
+$profile = [
+    'first_name' => '', 'last_name' => '', 'country' => '', 'address' => '', 'address2' => '', 'city' => '', 'state' => '', 'postcode' => '', 'phone' => '', 'email' => ''
+];
+$res = $conn->query("SELECT * FROM user_profiles WHERE user_id = $uid LIMIT 1");
+if ($res && $res->num_rows === 1) {
+    $profile = $res->fetch_assoc();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="zxx">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="Ogani Template">
-    <meta name="keywords" content="Ogani, unica, creative, html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Rosella - Checkout</title>
+    <title>Rosella - Profile</title>
     <link rel="icon" href="img/logo1.png" type="image/x-icon">
-
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;600;900&display=swap" rel="stylesheet">
-
-    <!-- Css Styles -->
     <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="css/font-awesome.min.css" type="text/css">
     <link rel="stylesheet" href="css/elegant-icons.css" type="text/css">
@@ -84,38 +78,37 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="css/owl.carousel.min.css" type="text/css">
     <link rel="stylesheet" href="css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="css/style.css" type="text/css">
-</head>
-
+    <style>
+        .profile-container { max-width: 720px; margin: 30px auto; }
+    </style>
+    </head>
 <body>
-    <!-- Page Preloder -->
-    <div id="preloder">
-        <div class="loader"></div>
-    </div>
+    <div id="preloder"><div class="loader"></div></div>
 
     <?php include 'partials/header.php'; ?>
 
-    <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-section set-bg" data-setbg="img/Frame3.png">
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center">
                     <div class="breadcrumb__text">
-                        <h2>Checkout</h2>
+                        <h2>My Profile</h2>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    <!-- Breadcrumb Section End -->
 
-    <!-- Checkout Section Begin -->
     <section class="checkout spad">
-        <div class="container">
+        <div class="container profile-container">
+            <?php if ($message !== ''): ?>
+                <div class="alert alert-info" role="alert"><?php echo htmlspecialchars($message); ?></div>
+            <?php endif; ?>
             <div class="checkout__form">
-                <h4>Billing Details</h4>
-                <form action="checkout_process.php" method="POST">
+                <h4>Profile & Address</h4>
+                <form method="POST" action="profile.php">
                     <div class="row">
-                        <div class="col-lg-8 col-md-6">
+                        <div class="col-lg-12">
                             <div class="row">
                                 <div class="col-lg-6">
                                     <div class="checkout__input">
@@ -165,40 +158,17 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="checkout__input">
-                                <p>Order notes<span>*</span></p>
-                                <input type="text" name="order_notes" placeholder="Notes about your order, e.g. special notes for delivery.">
-                            </div>
                         </div>
-                        <div class="col-lg-4 col-md-6">
-    <div class="checkout__order">
-        <h4>Your Order</h4>
-        <div class="checkout__order__products">Products <span>Total</span></div>
-        <ul>
-            <?php foreach ($cart_items as $item): ?>
-                <li>
-                    <?php echo $item['product_name']; ?> 
-                    <span>৳<?php echo number_format($item['product_price'] * $item['quantity'], 2); ?></span>
-                    <br>
-                    <small>Quantity: <?php echo $item['quantity']; ?></small>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <div class="checkout__order__subtotal">Subtotal <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
-        <div class="checkout__order__total">Total <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
-        <input type="hidden" name="total_amount" value="<?php echo $total_amount; ?>">
-        <input type="hidden" name="products" value="<?php echo htmlspecialchars(json_encode($cart_items)); ?>">
-        <button type="submit" class="site-btn">PLACE ORDER</button>
-    </div>
-</div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button type="submit" class="site-btn">Save Profile</button>
+                        <a href="checkout.php" class="site-btn" style="margin-left:10px;background:#28a745;">Go to Checkout</a>
                     </div>
                 </form>
             </div>
         </div>
     </section>
-    <!-- Checkout Section End -->
 
-    <!-- Footer Section Begin -->
     <footer class='footer spad'>
         <div class='container'>
             <div class='row'>
@@ -218,9 +188,9 @@ if (isset($_SESSION['user_id'])) {
                     <div class='footer__widget'>
                         <h6>Useful Links</h6>
                         <ul>
-                            <li><a href='#'>Home</a></li>
-                            <li><a href='#'>Cart</a></li>
-                            <li><a href='#'>Contact</a></li>
+                            <li><a href='./index.php'>Home</a></li>
+                            <li><a href='./shoping-cart.php'>Cart</a></li>
+                            <li><a href='./contact.php'>Contact</a></li>
                         </ul>
                     </div>
                 </div>
@@ -238,24 +208,9 @@ if (isset($_SESSION['user_id'])) {
                     </div>
                 </div>
             </div>
-            <div class='row'>
-                <div class='col-lg-12'>
-                    <div class='footer__copyright'>
-                        <div class='footer__copyright__text'>
-                            <p>
-                                Copyright &copy;
-                                <script>document.write(new Date().getFullYear());
-                                </script> All rights reserved </a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </footer>
-    <!-- Footer Section End -->
 
-    <!-- Js Plugins -->
     <script src="js/jquery-3.3.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/jquery.nice-select.min.js"></script>
@@ -265,5 +220,6 @@ if (isset($_SESSION['user_id'])) {
     <script src="js/owl.carousel.min.js"></script>
     <script src="js/main.js"></script>
 </body>
-
 </html>
+
+
