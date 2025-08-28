@@ -9,6 +9,11 @@ include '../db.php';
 // Start the session
 session_start();
 
+// Generate a unique session ID if it doesn't exist
+if (!isset($_SESSION['session_id'])) {
+    $_SESSION['session_id'] = session_id();
+}
+
 // Ensure users and orders tables exist and orders has status
 $conn->query("CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -35,7 +40,11 @@ $conn->query("CREATE TABLE IF NOT EXISTS orders (
     total_amount DECIMAL(10,2) NOT NULL,
     products LONGTEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    payment_transaction_id VARCHAR(100) NULL,
+    payment_status VARCHAR(20) DEFAULT 'pending',
+    payment_error TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 )");
 
@@ -43,6 +52,30 @@ $conn->query("CREATE TABLE IF NOT EXISTS orders (
 $checkCol = $conn->query("SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'status'");
 if ($checkCol && ($row = $checkCol->fetch_assoc()) && (int)$row['cnt'] === 0) {
     $conn->query("ALTER TABLE orders ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'pending'");
+}
+
+// Ensure payment_transaction_id column exists
+$checkCol = $conn->query("SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'payment_transaction_id'");
+if ($checkCol && ($row = $checkCol->fetch_assoc()) && (int)$row['cnt'] === 0) {
+    $conn->query("ALTER TABLE orders ADD COLUMN payment_transaction_id VARCHAR(100) NULL AFTER status");
+}
+
+// Ensure payment_status column exists
+$checkCol = $conn->query("SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'payment_status'");
+if ($checkCol && ($row = $checkCol->fetch_assoc()) && (int)$row['cnt'] === 0) {
+    $conn->query("ALTER TABLE orders ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending' AFTER payment_transaction_id");
+}
+
+// Ensure payment_error column exists
+$checkCol = $conn->query("SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'payment_error'");
+if ($checkCol && ($row = $checkCol->fetch_assoc()) && (int)$row['cnt'] === 0) {
+    $conn->query("ALTER TABLE orders ADD COLUMN payment_error TEXT NULL AFTER payment_status");
+}
+
+// Ensure updated_at column exists
+$checkCol = $conn->query("SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'updated_at'");
+if ($checkCol && ($row = $checkCol->fetch_assoc()) && (int)$row['cnt'] === 0) {
+    $conn->query("ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at");
 }
 
 // Check if the form is submitted
@@ -64,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validate required fields
     if (empty($first_name) || empty($last_name) || empty($country) || empty($address) || empty($city) || empty($state) || empty($postcode) || empty($phone) || empty($email)) {
-        die("Error: All required fields must be filled.");
+        die(json_encode(['success' => false, 'message' => 'All required fields must be filled.']));
     }
 
     // Validate email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        die("Error: Invalid email address.");
+        die(json_encode(['success' => false, 'message' => 'Invalid email address.']));
     }
 
     // Validate products data
@@ -132,9 +165,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtInsertUser->close();
     }
 
-    // Insert order into the database (now with user_id assured if account created)
-    $sql = "INSERT INTO orders (user_id, first_name, last_name, country, address, address2, city, state, postcode, phone, email, order_notes, total_amount, products)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // Generate a unique transaction ID for SSLCommerz
+    $tran_id = 'TXN' . time() . rand(1000, 9999);
+    
+    // Insert order into the database with 'pending' status (now with user_id assured if account created)
+    $sql = "INSERT INTO orders (user_id, first_name, last_name, country, address, address2, city, state, postcode, phone, email, order_notes, total_amount, products, status, payment_status, payment_transaction_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?)";
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
@@ -142,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $stmt->bind_param(
-        "isssssssssssds",
+        "isssssssssssdss",
         $user_id,
         $first_name,
         $last_name,
@@ -156,20 +192,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email,
         $order_notes,
         $total_amount,
-        $products_json
+        $products_json,
+        $tran_id
     );
 
     if ($stmt->execute()) {
-        // Clear the cart (if applicable)
+        // Don't clear the cart yet - we'll do this after successful payment
+        // Store cart items in session for potential recovery if needed
         $session_id = $_SESSION['session_id'];
-        $sql_clear_cart = "DELETE FROM carts WHERE session_id = ?";
-        $stmt_clear_cart = $conn->prepare($sql_clear_cart);
-        $stmt_clear_cart->bind_param("s", $session_id);
-        $stmt_clear_cart->execute();
-        $stmt_clear_cart->close();
+        $sql_get_cart = "SELECT * FROM carts WHERE session_id = ?";
+        $stmt_get_cart = $conn->prepare($sql_get_cart);
+        $stmt_get_cart->bind_param("s", $session_id);
+        $stmt_get_cart->execute();
+        $cart_items = $stmt_get_cart->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt_get_cart->close();
+        
+        // Store cart items in session for potential recovery
+        $_SESSION['pending_cart'] = $cart_items;
 
         // Save or update profile from the submitted checkout details
-        if ($user_id) {
+        if (isset($user_id) && $user_id) {
             $conn->query("CREATE TABLE IF NOT EXISTS user_profiles (
                 user_id INT PRIMARY KEY,
                 first_name VARCHAR(100) NULL,
@@ -195,8 +237,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_up->close();
         }
 
+        $order_id = $stmt->insert_id;
         $stmt->close();
-        header("Location: order_success.php");
+        
+        // Store order ID in session for verification in process_payment.php
+        $_SESSION['pending_order_id'] = $order_id;
+        
+        // Redirect to SSLCommerz payment gateway
+        header("Location: process_payment.php?order_id=" . $order_id);
         exit();
     } else {
         die("Error: " . $stmt->error);

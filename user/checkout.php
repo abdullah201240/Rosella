@@ -113,7 +113,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="container">
             <div class="checkout__form">
                 <h4>Billing Details</h4>
-                <form action="checkout_process.php" method="POST">
+                <form action="checkout_process.php" method="POST" id="checkoutForm">
                     <div class="row">
                         <div class="col-lg-8 col-md-6">
                             <div class="row">
@@ -145,7 +145,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
                             <div class="checkout__input">
                                 <p>Country/State<span>*</span></p>
-                                <input type="text" name="state" value="<?php echo htmlspecialchars($profile['state'] ?? ''); ?>" required>
+                                <input type="text" name="state" value="<?php echo htmlspecialchars($profile['city'] ?? ''); ?>" required>
                             </div>
                             <div class="checkout__input">
                                 <p>Postcode / ZIP<span>*</span></p>
@@ -166,31 +166,36 @@ if (isset($_SESSION['user_id'])) {
                                 </div>
                             </div>
                             <div class="checkout__input">
-                                <p>Order notes<span>*</span></p>
+                                <p>Order notes</p>
                                 <input type="text" name="order_notes" placeholder="Notes about your order, e.g. special notes for delivery.">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6">
-    <div class="checkout__order">
-        <h4>Your Order</h4>
-        <div class="checkout__order__products">Products <span>Total</span></div>
-        <ul>
-            <?php foreach ($cart_items as $item): ?>
-                <li>
-                    <?php echo $item['product_name']; ?> 
-                    <span>৳<?php echo number_format($item['product_price'] * $item['quantity'], 2); ?></span>
-                    <br>
-                    <small>Quantity: <?php echo $item['quantity']; ?></small>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <div class="checkout__order__subtotal">Subtotal <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
-        <div class="checkout__order__total">Total <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
-        <input type="hidden" name="total_amount" value="<?php echo $total_amount; ?>">
-        <input type="hidden" name="products" value="<?php echo htmlspecialchars(json_encode($cart_items)); ?>">
-        <button type="submit" class="site-btn">PLACE ORDER</button>
-    </div>
-</div>
+                            <div class="checkout__order">
+                                <h4>Your Order</h4>
+                                <div class="checkout__order__products">Products <span>Total</span></div>
+                                <ul>
+                                    <?php foreach ($cart_items as $item): ?>
+                                        <li>
+                                            <?php echo $item['product_name']; ?> 
+                                            <span>৳<?php echo number_format($item['product_price'] * $item['quantity'], 2); ?></span>
+                                            <br>
+                                            <small>Quantity: <?php echo $item['quantity']; ?></small>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                                <div class="checkout__order__subtotal">Subtotal <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
+                                <div class="checkout__order__total">Total <span>৳<?php echo number_format($total_amount, 2); ?></span></div>
+                                <input type="hidden" name="total_amount" value="<?php echo $total_amount; ?>">
+                                <input type="hidden" name="products" value="<?php echo htmlspecialchars(json_encode($cart_items)); ?>">
+                                <button type="submit" class="site-btn" id="placeOrderBtn">
+                                    <i class="fa fa-credit-card"></i> PROCEED TO PAYMENT
+                                </button>
+                                <p class="text-muted mt-2">
+                                    <small>You will be redirected to SSLCommerz secure payment gateway</small>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -264,6 +269,58 @@ if (isset($_SESSION['user_id'])) {
     <script src="js/mixitup.min.js"></script>
     <script src="js/owl.carousel.min.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Form validation and submission handling
+            $('#checkoutForm').on('submit', function(e) {
+                var $form = $(this);
+                var $btn = $('#placeOrderBtn');
+                var originalText = $btn.html();
+                
+                // Basic validation
+                var requiredFields = $form.find('[required]');
+                var isValid = true;
+                
+                requiredFields.each(function() {
+                    if (!$(this).val().trim()) {
+                        isValid = false;
+                        $(this).addClass('is-invalid');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+                
+                // Show loading state
+                $btn.prop('disabled', true);
+                $btn.html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+                
+                // Add loading overlay
+                $('body').append('<div id="loadingOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;"><div class="text-white text-center"><i class="fa fa-spinner fa-spin fa-3x"></i><br><h4 class="mt-3">Processing your order...</h4><p>Please wait while we redirect you to the payment gateway.</p></div></div>');
+                
+                // Form will submit normally
+                return true;
+            });
+            
+            // Remove loading state if form validation fails
+            $('input[required]').on('input', function() {
+                if ($(this).val().trim()) {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+            
+            // Check if cart is empty
+            <?php if (empty($cart_items)): ?>
+            $('#placeOrderBtn').prop('disabled', true).html('Cart is Empty');
+            <?php endif; ?>
+        });
+    </script>
 </body>
 
 </html>

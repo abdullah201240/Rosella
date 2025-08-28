@@ -2,6 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 include '../db.php';
+include '../includes/SSLCommerz.php';
 session_start();
 
 // Require login to finalize the pending order
@@ -10,13 +11,113 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// If no pending order, go to My Orders
+// If no pending order, go to checkout
 if (!isset($_SESSION['pending_order'])) {
-    header('Location: my_orders.php');
+    header('Location: checkout.php');
     exit();
 }
 
 $pending = $_SESSION['pending_order'];
+
+// Initialize SSLCommerz
+$sslcommerz = new SSLCommerz();
+
+// If this is a payment success callback
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tran_id'])) {
+    // Validate payment response from SSLCommerz
+    $validation = $sslcommerz->validateResponse($_POST);
+    
+    if ($validation['status'] === 'success') {
+        // Process the order after successful payment
+        $tran_id = $_POST['tran_id'];
+        $amount = $_POST['amount'];
+        $currency = $_POST['currency'];
+        
+        // Get pending order from session
+        $order = $_SESSION['pending_order'];
+        
+        // Insert order into database
+        $stmt = $conn->prepare("INSERT INTO orders (
+            user_id, first_name, last_name, country, address, address2, 
+            city, state, postcode, phone, email, order_notes, 
+            total_amount, products, status, payment_method, 
+            payment_status, payment_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', 
+                 'SSLCommerz', 'completed', ?, NOW())");
+        
+        $products_json = json_encode($order['products']);
+        
+        $stmt->bind_param(
+            "isssssssssssdsss",
+            $_SESSION['user_id'],
+            $order['first_name'],
+            $order['last_name'],
+            $order['country'],
+            $order['address'],
+            $order['address2'],
+            $order['city'],
+            $order['state'],
+            $order['postcode'],
+            $order['phone'],
+            $order['email'],
+            $order['order_notes'],
+            $order['total_amount'],
+            $products_json,
+            $tran_id
+        );
+        
+        if ($stmt->execute()) {
+            $order_id = $conn->insert_id;
+            
+            // Clear the cart
+            $session_id = session_id();
+            $conn->query("DELETE FROM carts WHERE session_id = '$session_id'");
+            
+            // Clear pending order from session
+            unset($_SESSION['pending_order']);
+            
+            // Redirect to success page
+            header("Location: order_success.php?order_id=$order_id");
+            exit();
+        } else {
+            $error = "Error processing order: " . $conn->error;
+        }
+    } else {
+        $error = "Payment validation failed: " . $validation['message'];
+    }
+}
+
+// If we get here, process payment
+$tran_id = 'TXN' . time();
+$post_data = [
+    'total_amount' => $pending['total_amount'],
+    'tran_id' => $tran_id,
+    'customer_name' => $pending['first_name'] . ' ' . $pending['last_name'],
+    'customer_email' => $pending['email'],
+    'customer_address' => $pending['address'],
+    'customer_address2' => $pending['address2'] ?? '',
+    'customer_city' => $pending['city'],
+    'customer_state' => $pending['state'],
+    'customer_postcode' => $pending['postcode'],
+    'customer_country' => $pending['country'],
+    'customer_phone' => $pending['phone'],
+    'success_url' => 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/finalize_order.php',
+    'fail_url' => 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/payment_failed.php',
+    'cancel_url' => 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/checkout.php',
+    'ipn_url' => 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/payment_ipn.php',
+    'product_name' => 'Order #' . $tran_id,
+    'product_profile' => 'physical-goods'
+];
+
+// Create SSLCommerz session
+$result = $sslcommerz->createSession($post_data);
+$payment_url = $result['GatewayPageURL'] ?? '';
+if ($payment_url) {
+    header("Location: $payment_url");
+    exit();
+} else {
+    $error = "Failed to initiate payment. Please try again.";
+}
 
 // Ensure orders table has status (idempotent safety)
 $conn->query("CREATE TABLE IF NOT EXISTS orders (

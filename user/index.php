@@ -4,6 +4,14 @@ ini_set('display_errors', 1);
 include '../db.php';
 session_start();
 
+// Generate a unique session ID if it doesn't exist
+if (!isset($_SESSION['session_id'])) {
+    $_SESSION['session_id'] = session_id();
+}
+
+// Include cart functions
+include_once 'includes/cart_functions.php';
+
 // SQL query to fetch categories
 $sql = 'SELECT * FROM categories';
 $result = $conn->query($sql);
@@ -166,6 +174,9 @@ function sanitizeCategoryName($name)
                                             href='shop-details.php?id=<?php echo $product['id']; ?>'><?php echo $product['name']; ?></a>
                                     </h6>
                                     <h5>৳<?php echo $product['price']; ?></h5>
+                                    <button class="quick-add-to-cart" data-product-id="<?php echo $product['id']; ?>" data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                        <i class="fa fa-shopping-cart"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -240,6 +251,160 @@ function sanitizeCategoryName($name)
         </div>
     </footer>
     <!-- Footer Section End -->
+
+    <!-- Quick Add to Cart JavaScript and CSS -->
+    <style>
+    .quick-add-to-cart {
+        background: #7fad39;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s ease;
+        margin-top: 10px;
+        width: 100%;
+    }
+    
+    .quick-add-to-cart:hover {
+        background: #6b9a2f;
+    }
+    
+    .quick-add-to-cart:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .quick-add-to-cart.success {
+        background: #28a745;
+    }
+    
+    .quick-add-to-cart.error {
+        background: #dc3545;
+    }
+    </style>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addToCartButtons = document.querySelectorAll('.quick-add-to-cart');
+        
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const productName = this.getAttribute('data-product-name');
+                const originalText = this.innerHTML;
+                
+                // Disable button and show loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Adding...';
+                
+                // Make AJAX request
+                fetch('quick_add_to_cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'product_id=' + productId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success
+                        this.innerHTML = '<i class="fa fa-check"></i> Added!';
+                        this.classList.add('success');
+                        
+                        // Update cart count in navigation
+                        updateCartCount(data.cart_count);
+                        
+                        // Show success message
+                        showNotification('Product added to cart successfully!', 'success');
+                        
+                        // Reset button after 2 seconds
+                        setTimeout(() => {
+                            this.disabled = false;
+                            this.innerHTML = originalText;
+                            this.classList.remove('success');
+                        }, 2000);
+                    } else {
+                        // Show error
+                        this.innerHTML = '<i class="fa fa-times"></i> Error!';
+                        this.classList.add('error');
+                        showNotification(data.message || 'Failed to add product to cart', 'error');
+                        
+                        // Reset button after 2 seconds
+                        setTimeout(() => {
+                            this.disabled = false;
+                            this.innerHTML = originalText;
+                            this.classList.remove('error');
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    this.innerHTML = '<i class="fa fa-times"></i> Error!';
+                    this.classList.add('error');
+                    showNotification('Network error occurred', 'error');
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        this.disabled = false;
+                        this.innerHTML = originalText;
+                        this.classList.remove('error');
+                    }, 2000);
+                });
+            });
+        });
+        
+        function updateCartCount(count) {
+            const cartCountElements = document.querySelectorAll('.cart-count');
+            cartCountElements.forEach(element => {
+                element.textContent = count;
+            });
+        }
+        
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            
+            // Style the notification
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                ${type === 'success' ? 'background: #28a745;' : 'background: #dc3545;'}
+            `;
+            
+            // Add animation CSS
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    });
+    </script>
 
     <!-- Js Plugins -->
     <script src='js/jquery-3.3.1.min.js'></script>

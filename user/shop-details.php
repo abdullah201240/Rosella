@@ -55,35 +55,76 @@ if (isset($_GET['id'])) {
     die("Invalid request.");
 }
 
-// Handle Add to Cart
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
-    $session_id = $_SESSION['session_id'];
-    $product_id = $product['id'];
-    $product_name = $product['name'];
-    $product_price = $product['price'];
-    $product_image = $product['image'];
-    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1; // Get quantity from form
+// Handle Add to Cart via AJAX
+if (isset($_POST['ajax_add_to_cart'])) {
+    $response = ['success' => false, 'message' => ''];
+    
+    try {
+        if (!isset($_SESSION['session_id'])) {
+            throw new Exception('Session not initialized');
+        }
+        
+        $session_id = $_SESSION['session_id'];
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+        
+        if ($product_id <= 0) {
+            throw new Exception('Invalid product');
+        }
+        
+        // Get product details using prepared statement
+        $sql = "SELECT * FROM products WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            throw new Exception('Product not found');
+        }
+        
+        $product = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Check if product is already in cart using prepared statement
+        $sql_check = "SELECT * FROM carts WHERE session_id = ? AND product_id = ?";
+        $stmt = $conn->prepare($sql_check);
+        $stmt->bind_param("si", $session_id, $product_id);
+        $stmt->execute();
+        $result_check = $stmt->get_result();
 
-    // Check if the product is already in the cart for this session
-    $sql_check = "SELECT * FROM carts WHERE session_id = '$session_id' AND product_id = $product_id";
-    $result_check = $conn->query($sql_check);
-
-    if ($result_check->num_rows > 0) {
-        // Update the quantity if the product is already in the cart
-        $sql_update = "UPDATE carts SET quantity = quantity + $quantity WHERE session_id = '$session_id' AND product_id = $product_id";
-        $conn->query($sql_update);
-    } else {
-        // Insert the product into the cart
-        $sql_insert = "INSERT INTO carts (session_id, product_id, product_name, product_price, product_image, quantity)
-                       VALUES ('$session_id', $product_id, '$product_name', $product_price, '$product_image', $quantity)";
-        $conn->query($sql_insert);
+        if ($result_check->num_rows > 0) {
+            // Update quantity if product exists in cart
+            $sql_update = "UPDATE carts SET quantity = quantity + ? WHERE session_id = ? AND product_id = ?";
+            $stmt = $conn->prepare($sql_update);
+            $stmt->bind_param("isi", $quantity, $session_id, $product_id);
+            $stmt->execute();
+        } else {
+            // Insert new item to cart
+            $sql_insert = "INSERT INTO carts (session_id, product_id, product_name, product_price, product_image, quantity)
+                         VALUES (?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql_insert);
+            $stmt->bind_param("sisdsi", 
+                $session_id, 
+                $product_id, 
+                $product['name'], 
+                $product['price'], 
+                $product['image'], 
+                $quantity
+            );
+            $stmt->execute();
+            $stmt->close();
+        }
+        
+        $response['success'] = true;
+        $response['message'] = 'Product added to cart successfully!';
+        
+    } catch (Exception $e) {
+        $response['message'] = 'Error: ' . $e->getMessage();
     }
-
-    // Set a session variable to indicate success
-    $_SESSION['cart_success'] = true;
-
-    // Redirect to avoid form resubmission
-    header("Location: shop-details.php?id=$product_id");
+    
+    header('Content-Type: application/json');
+    echo json_encode($response);
     exit();
 }
 ?>
@@ -167,11 +208,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     </div>
 </div>
 
-<form method="POST" action="">
+<form id="addToCartForm" method="POST" onsubmit="event.preventDefault(); addToCart();">
     <input type="hidden" name="add_to_cart" value="1">
     <input type="hidden" id="quantity_hidden" name="quantity" value="1">
     <button type="submit" class="primary-btn">ADD TO CART</button>
 </form>
+
+<!-- Success Alert (initially hidden) -->
+<div id="cartAlert" style="display: none; position: fixed; top: 100px; right: 30px; z-index: 9999; width: 350px; max-width: 90%;">
+    <div style="background: #4BB543; color: white; padding: 15px 20px; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: center;">
+            <div style="margin-right: 15px; font-size: 24px;">
+                <i class="fa fa-check-circle"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; margin-bottom: 3px;">Success!</div>
+                <div id="alertMessage" style="font-size: 14px; opacity: 0.9;">Product added to cart successfully!</div>
+            </div>
+            <button type="button" onclick="hideAlert()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0 5px; line-height: 1; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                &times;
+            </button>
+        </div>
+        <div id="alertProgress" style="position: absolute; bottom: 0; left: 0; height: 4px; background: rgba(255,255,255,0.3); width: 100%;"></div>
+    </div>
+</div>
                     
                         <ul>
                             <li><b>Availability</b> <span>In Stock</span></li>
@@ -258,13 +318,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         </div>
     </div>
 </section>
-<?php if (isset($_SESSION['cart_success'])): ?>
-        <script>
-            alert('Product added to cart successfully!');
-        </script>
-        <?php unset($_SESSION['cart_success']); // Clear the session variable ?>
-    <?php endif; ?>
 <!-- Related Product Section End -->
+
+<!-- Success Alert -->
     <!-- Related Product Section End -->
 
     <!-- Footer Section Begin -->
@@ -339,6 +395,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     <script src="js/mixitup.min.js"></script>
     <script src="js/owl.carousel.min.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+    function showAlert(message) {
+        $('#alertMessage').text(message);
+        var alert = $('#cartAlert');
+        var progress = $('#alertProgress');
+        
+        // Reset and show alert
+        progress.css('width', '100%');
+        alert.fadeIn(300);
+        
+        // Animate progress bar
+        progress.animate({ width: '0%' }, 5000, 'linear');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(hideAlert, 5000);
+    }
+    
+    function hideAlert() {
+        $('#cartAlert').fadeOut(300);
+    }
+    
+    function updateCartCount() {
+        // Update cart count in header by making a separate request
+        $.get('get-cart-count.php', function(response) {
+            if (response && response.count !== undefined) {
+                $('.cart-count').text(response.count);
+            }
+        }, 'json');
+    }
+    
+    function addToCart() {
+        var form = $('#addToCartForm');
+        var button = form.find('button[type="submit"]');
+        var originalText = button.html();
+        var quantity = parseInt($('#quantity').val()) || 1;
+        
+        // Show loading state
+        button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Adding...');
+        
+        $.ajax({
+            url: 'shop-details.php?id=<?php echo $product_id; ?>',
+            type: 'POST',
+            data: {
+                ajax_add_to_cart: 1,
+                product_id: <?php echo $product['id']; ?>,
+                quantity: quantity
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message);
+                    // Update cart count in header
+                    updateCartCount();
+                } else {
+                    showAlert(response.message || 'Error adding to cart');
+                }
+            },
+            error: function() {
+                showAlert('Error: Could not connect to server');
+            },
+            complete: function() {
+                // Reset button state
+                button.prop('disabled', false).html(originalText);
+            }
+        });
+    }
+    
+    // Close button functionality
+    $(document).on('click', '.alert .close', function() {
+        $(this).closest('.alert').fadeOut();
+    });
+    </script>
  
     <script>
         $(document).ready(function() {
