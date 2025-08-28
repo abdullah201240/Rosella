@@ -1,28 +1,67 @@
 <?php
-
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 if (!isset($_SESSION['admin'])) {
-  header("location: login.php");
-  exit;
+    header("location: login.php");
+    exit;
 }
 
 include("../db.php");
 
-// Fetch total sales and total amount
-$totalSalesQuery = "SELECT COUNT(*) as total_sales, SUM(total_amount) as total_amount FROM orders where status='completed' ";
-$totalSalesResult = mysqli_query($conn, $totalSalesQuery);
-$totalSalesData = mysqli_fetch_assoc($totalSalesResult);
+// Fetch dashboard statistics
+$stats = [];
 
-// Fetch latest orders
-$latestOrdersQuery = "SELECT * FROM orders ORDER BY id DESC LIMIT 5";
+// Total Sales and Revenue
+$result = mysqli_query($conn, "SELECT 
+    COUNT(*) as total_orders,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
+    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders,
+    SUM(total_amount) as total_revenue,
+    SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END) as completed_revenue,
+    AVG(total_amount) as avg_order_value,
+    COUNT(DISTINCT email) as total_customers
+    FROM orders");
+$stats = mysqli_fetch_assoc($result);
+
+// Revenue by status
+$revenueByStatus = [];
+$result = mysqli_query($conn, "SELECT 
+    status, 
+    COUNT(*) as order_count, 
+    SUM(total_amount) as total_amount 
+    FROM orders 
+    GROUP BY status");
+while ($row = mysqli_fetch_assoc($result)) {
+    $revenueByStatus[] = $row;
+}
+
+// Latest orders
+$latestOrdersQuery = "SELECT o.*, 
+    (SELECT COUNT(*) FROM orders o2 WHERE o2.email = o.email) as customer_order_count
+    FROM orders o 
+    ORDER BY order_date DESC LIMIT 5";
 $latestOrdersResult = mysqli_query($conn, $latestOrdersQuery);
 
-// Fetch all transactions
-$transactionsQuery = "SELECT * FROM orders ORDER BY order_date DESC";
+// Recent transactions
+$transactionsQuery = "SELECT * FROM orders ORDER BY order_date DESC LIMIT 10";
 $transactionsResult = mysqli_query($conn, $transactionsQuery);
 
+// Get monthly revenue for the last 6 months
+$monthlyRevenue = [];
+$result = mysqli_query($conn, "
+    SELECT 
+        DATE_FORMAT(order_date, '%Y-%m') as month,
+        SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END) as revenue,
+        COUNT(CASE WHEN status = 'completed' THEN id END) as orders
+    FROM orders 
+    WHERE order_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    GROUP BY DATE_FORMAT(order_date, '%Y-%m')
+    ORDER BY month ASC
+");
+while ($row = mysqli_fetch_assoc($result)) {
+    $monthlyRevenue[] = $row;
+}
 ?>
 
 
@@ -32,372 +71,428 @@ $transactionsResult = mysqli_query($conn, $transactionsQuery);
 
 <head>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Rosella</title>
+  <title>Rosella - Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #6c63ff;
+      --secondary-color: #f8f9fa;
+      --success-color: #28a745;
+      --warning-color: #ffc107;
+      --danger-color: #dc3545;
+      --dark-color: #343a40;
+    }
+    body {
+      background-color: #f5f6fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .sidebar {
+      min-height: 100vh;
+      background: var(--dark-color);
+      color: white;
+    }
+    .card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease;
+      margin-bottom: 20px;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card-icon {
+      font-size: 2rem;
+      opacity: 0.7;
+    }
+    .stat-card {
+      border-left: 4px solid var(--primary-color);
+    }
+    .stat-card.primary { border-left-color: var(--primary-color); }
+    .stat-card.success { border-left-color: var(--success-color); }
+    .stat-card.warning { border-left-color: var(--warning-color); }
+    .stat-card.danger { border-left-color: var(--danger-color); }
+    .revenue-chart {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .table-responsive {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .status-badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .status-pending { background-color: #fff3cd; color: #856404; }
+    .status-completed { background-color: #d4edda; color: #155724; }
+    .status-canceled { background-color: #f8d7da; color: #721c24; }
+  </style>
   <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport" />
   <link rel="icon" href="assets/img/logo1.png" type="image/x-icon" />
-
-  <!-- Fonts and icons -->
-  <script src="assets/js/plugin/webfont/webfont.min.js"></script>
-  <script>
-    WebFont.load({
-      google: { families: ["Public Sans:300,400,500,600,700"] },
-      custom: {
-        families: [
-          "Font Awesome 5 Solid",
-          "Font Awesome 5 Regular",
-          "Font Awesome 5 Brands",
-          "simple-line-icons",
-        ],
-        urls: ["assets/css/fonts.min.css"],
-      },
-      active: function () {
-        sessionStorage.fonts = true;
-      },
-    });
-  </script>
-
-  <!-- CSS Files -->
-  <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="assets/css/plugins.min.css" />
-  <link rel="stylesheet" href="assets/css/kaiadmin.min.css" />
-
-  <!-- CSS Just for demo purpose, don't include it in your project -->
-  <link rel="stylesheet" href="assets/css/demo.css" />
 </head>
 
 <body>
-  <div class="wrapper">
-    <!-- Sidebar -->
-    <div class="sidebar" data-background-color="dark">
-      <div class="sidebar-logo">
-        <!-- Logo Header -->
-        <div class="logo-header" data-background-color="dark">
-          <a href="index.php" class="logo">
-            <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
-          </a>
-          <div class="nav-toggle">
-            <button class="btn btn-toggle toggle-sidebar">
-              <i class="gg-menu-right"></i>
-            </button>
-            <button class="btn btn-toggle sidenav-toggler">
-              <i class="gg-menu-left"></i>
-            </button>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+        <div class="position-sticky pt-3">
+          <div class="text-center mb-4">
+            <img src="assets/img/logo2.png" alt="Rosella" class="img-fluid" style="max-height: 60px;">
           </div>
-          <button class="topbar-toggler more">
-            <i class="gg-more-vertical-alt"></i>
-          </button>
-        </div>
-        <!-- End Logo Header -->
-      </div>
-      <div class="sidebar-wrapper scrollbar scrollbar-inner">
-        <div class="sidebar-content">
-          <ul class="nav nav-secondary">
-            <li class="nav-item active">
-              <a href="./index.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-tachometer-alt"></i>
-                <p>Dashboard</p>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active text-white" href="index.php">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                Dashboard
               </a>
             </li>
-            <li class="nav-item active">
-              <a href="./category.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-plus-circle"></i>
-                <p>Add Category</p>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="category.php">
+                <i class="fas fa-plus-circle me-2"></i>
+                Add Category
               </a>
             </li>
-            <li class="nav-item active">
-              <a href="./categoryTable.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-th-list"></i>
-                <p>All Categories</p>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="categoryTable.php">
+                <i class="fas fa-th-list me-2"></i>
+                All Categories
               </a>
             </li>
-            <li class="nav-item active">
-              <a href="./addProducts.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-plus-square"></i>
-                <p>Add Product</p>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="addProducts.php">
+                <i class="fas fa-plus-square me-2"></i>
+                Add Product
               </a>
             </li>
-            <li class="nav-item active">
-              <a href="./productTable.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-boxes"></i>
-                <p>All Products</p>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="productTable.php">
+                <i class="fas fa-boxes me-2"></i>
+                All Products
               </a>
             </li>
-            <li class="nav-item active">
-              <a href="./allOrder.php" class="collapsed" aria-expanded="false">
-                <i class="fas fa-shopping-cart"></i>
-                <p>All Orders</p>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="allOrder.php">
+                <i class="fas fa-shopping-cart me-2"></i>
+                All Orders
               </a>
             </li>
-            <li class="nav-item active">
-                            <a href="./contactTable.php" class="collapsed" aria-expanded="false">
-                                <i class="fas fa-envelope"></i>
-                                <p>Contact Messages</p>
-                            </a>
-                        </li>
-                        <li class="nav-item active">
-        <a href="./logout.php" class="collapsed" aria-expanded="false">
-            <i class="fas fa-sign-out-alt"></i>
-            <p>Logout</p>
-        </a>
-    </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="contactTable.php">
+                <i class="fas fa-envelope me-2"></i>
+                Contact Messages
+              </a>
+            </li>
+            <li class="nav-item mt-4">
+              <a class="nav-link text-danger" href="logout.php">
+                <i class="fas fa-sign-out-alt me-2"></i>
+                Logout
+              </a>
+            </li>
           </ul>
-
         </div>
       </div>
-    </div>
-    <!-- End Sidebar -->
 
-    <div class="main-panel">
-      <div class="main-header">
-        <div class="main-header-logo">
-          <!-- Logo Header -->
-          <div class="logo-header" data-background-color="dark">
-            <a href="index.php" class="logo">
-              <img src="assets/img/logo2.png" alt="navbar brand" class="navbar-brand" height="80" width="100" />
-            </a>
-            <div class="nav-toggle">
-              <button class="btn btn-toggle toggle-sidebar">
-                <i class="gg-menu-right"></i>
+      <!-- Main Content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+          <h1 class="h2">Dashboard Overview</h1>
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-calendar-alt me-1"></i>
+                This month
               </button>
-              <button class="btn btn-toggle sidenav-toggler">
-                <i class="gg-menu-left"></i>
-              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Week</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
+                <li><a class="dropdown-item" href="#">This Year</a></li>
+              </ul>
             </div>
-            <button class="topbar-toggler more">
-              <i class="gg-more-vertical-alt"></i>
-            </button>
           </div>
-          <!-- End Logo Header -->
         </div>
-        <!-- Navbar Header -->
-        <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
-          <div class="container-fluid">
-            <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
 
-            </nav>
-
-            <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
-
-
-
-
-
-              <li class="nav-item topbar-user dropdown hidden-caret">
-                <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
-                  
-                  <span class="profile-username">
-                    <span class="op-7">Hi,</span>
-                    <span class="fw-bold"><?php echo $_SESSION['admin_name'] ?></php></span>
-                  </span>
-                </a>
-
-              </li>
-            </ul>
-          </div>
-        </nav>
-        <!-- End Navbar -->
-      </div>
-
-      <div class="container">
-        <div class="page-inner">
-          <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4">
-            <div>
-              <h3 class="fw-bold mb-3">Dashboard</h3>
-            </div>
-
-          </div>
-          <div class="row">
-
-
-            <div class="col-sm-6 col-md-3">
-              <div class="card card-stats card-round">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                    <div class="col-icon">
-                      <div class="icon-big text-center icon-success bubble-shadow-small">
-                        <i class="fas fa-luggage-cart"></i>
-                      </div>
-                    </div>
-                    <div class="col col-stats ms-3 ms-sm-0">
-                      <div class="numbers">
-                        <p class="card-category">Sales</p>
-                        <h4 class="card-title">৳<?php echo number_format($totalSalesData['total_amount'], 2); ?></h4>
-                      </div>
-                    </div>
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card primary h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="text-muted mb-1">Total Revenue</h6>
+                    <h3 class="mb-0">৳<?php echo number_format($stats['completed_revenue'] ?? 0, 2); ?></h3>
+                    <p class="text-success mb-0"><small>+<?php echo $stats['completed_orders'] ?? 0; ?> orders</small></p>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-6 col-md-3">
-              <div class="card card-stats card-round">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                    <div class="col-icon">
-                      <div class="icon-big text-center icon-secondary bubble-shadow-small">
-                        <i class="far fa-check-circle"></i>
-                      </div>
-                    </div>
-                    <div class="col col-stats ms-3 ms-sm-0">
-                      <div class="numbers">
-                        <p class="card-category">Order</p>
-                        <h4 class="card-title"><?php echo $totalSalesData['total_sales']; ?></h4>
-                      </div>
-                    </div>
+                  <div class="card-icon bg-primary bg-opacity-10 p-3 rounded">
+                    <i class="fas fa-taka-sign text-primary"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-
-          <div class="row">
-            <div class="col-md-4">
-              <div class="card card-round">
-                <div class="card-body">
-                  <div class="card-head-row card-tools-still-right">
-                    <div class="card-title">Last Order</div>
-
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card success h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="text-muted mb-1">Total Orders</h6>
+                    <h3 class="mb-0"><?php echo number_format($stats['total_orders'] ?? 0); ?></h3>
+                    <p class="text-muted mb-0"><small>Completed: <?php echo $stats['completed_orders'] ?? 0; ?></small></p>
                   </div>
-
-                  <div class="card-list py-4">
-                    <?php while ($order = mysqli_fetch_assoc($latestOrdersResult)) { ?>
-                      <div class="item-list">
-                        <div class="info-user ms-3">
-                          <div class="username"><?php echo $order['first_name']; ?>  <?php echo $order['last_name']; ?></div>
-                          <div class="status"><?php echo $order['status']; ?></div>
-                        </div>
-                      </div>
-                    <?php } ?>
+                  <div class="card-icon bg-success bg-opacity-10 p-3 rounded">
+                    <i class="fas fa-shopping-cart text-success"></i>
                   </div>
-
-
-
-
                 </div>
               </div>
             </div>
-            <div class="col-md-8">
-              <div class="card card-round">
-                <div class="card-header">
-                  <div class="card-head-row card-tools-still-right">
-                    <div class="card-title">Transaction History</div>
-                    <div class="card-tools">
-                      <div class="dropdown">
-                        <button class="btn btn-icon btn-clean me-0" type="button" id="dropdownMenuButton"
-                          data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-
-                        </button>
-
-                      </div>
-                    </div>
+          </div>
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card warning h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="text-muted mb-1">Avg. Order Value</h6>
+                    <h3 class="mb-0">৳<?php echo number_format($stats['avg_order_value'] ?? 0, 2); ?></h3>
+                    <p class="text-muted mb-0"><small>From <?php echo $stats['total_customers'] ?? 0; ?> customers</small></p>
+                  </div>
+                  <div class="card-icon bg-warning bg-opacity-10 p-3 rounded">
+                    <i class="fas fa-chart-line text-warning"></i>
                   </div>
                 </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive">
-                    <!-- Projects table -->
-                    <table class="table align-items-center mb-0">
-                      <thead class="thead-light">
-                        <tr>
-                          <th scope="col">Payment Number</th>
-                          <th scope="col" class="text-end">Date & Time</th>
-                          <th scope="col" class="text-end">Amount</th>
-                          <th scope="col" class="text-end">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <?php while ($transaction = mysqli_fetch_assoc($transactionsResult)) { ?>
-
-                          <tr>
-                            <th scope="row">
-                              <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                <i class="fa fa-check"></i>
-                              </button>
-                              Payment from #<?php echo $transaction['id']; ?>
-                            </th>
-                            <td class="text-end"><?php echo $transaction['order_date']; ?></td>
-                            <td class="text-end">৳<?php echo number_format($transaction['total_amount'], 2); ?></td>
-                            <td class="text-end">
-                              <span
-                                class="badge badge-<?php echo $transaction['status'] == 'completed' ? 'success' : 'warning'; ?>">
-                                <?php echo $transaction['status']; ?>
-                              </span>
-                            </td>
-                          </tr>
-
-                        <?php } ?>
-
-
-
-
-                      </tbody>
-                    </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card danger h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="text-muted mb-1">Pending Orders</h6>
+                    <h3 class="mb-0"><?php echo $stats['pending_orders'] ?? 0; ?></h3>
+                    <p class="text-danger mb-0"><small>Needs attention</small></p>
+                  </div>
+                  <div class="card-icon bg-danger bg-opacity-10 p-3 rounded">
+                    <i class="fas fa-clock text-danger"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
+        <!-- Charts Row -->
+        <div class="row mb-4">
+          <!-- Revenue Chart -->
+          <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">Revenue Overview</h6>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="revenueDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    Last 6 Months
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="revenueDropdown">
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                    <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
+                    <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="card-body">
+                <canvas id="revenueChart" height="300"></canvas>
+              </div>
+            </div>
+          </div>
 
+          <!-- Order Status Chart -->
+          <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+              <div class="card-header">
+                <h6 class="card-title mb-0">Orders by Status</h6>
+              </div>
+              <div class="card-body d-flex justify-content-center">
+                <div style="width: 250px; height: 250px;">
+                  <canvas id="orderStatusChart"></canvas>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent">
+                <div class="row text-center">
+                  <?php 
+                  $statusColors = [
+                    'completed' => 'success',
+                    'pending' => 'warning',
+                    'processing' => 'info',
+                    'shipped' => 'primary',
+                    'cancelled' => 'danger'
+                  ];
+                  foreach ($revenueByStatus as $status): 
+                    $color = $statusColors[strtolower($status['status'])] ?? 'secondary';
+                  ?>
+                  <div class="col-4 mb-2">
+                    <div class="text-<?php echo $color; ?> fw-bold">
+                      <?php echo $status['order_count']; ?>
+                    </div>
+                    <div class="text-muted small">
+                      <?php echo ucfirst($status['status']); ?>
+                    </div>
+                  </div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">Recent Orders</h6>
+            <a href="allOrder.php" class="btn btn-sm btn-outline-primary">View All</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php while($order = mysqli_fetch_assoc($latestOrdersResult)): 
+                  $statusClass = strtolower($order['status']) === 'completed' ? 'success' : 
+                                (strtolower($order['status']) === 'pending' ? 'warning' : 
+                                (strtolower($order['status']) === 'cancelled' ? 'danger' : 'info'));
+                ?>
+                <tr>
+                  <td>#<?php echo $order['id']; ?></td>
+                  <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
+                  <td><?php echo date('M d, Y', strtotime($order['order_date'])); ?></td>
+                  <td>৳<?php echo number_format($order['total_amount'], 2); ?></td>
+                  <td>
+                    <span class="badge bg-<?php echo $statusClass; ?> status-badge">
+                      <?php echo ucfirst($order['status']); ?>
+                    </span>
+                  </td>
+                  <td>
+                    <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+                <?php endwhile; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
     </div>
-
-
-    <!-- End Custom template -->
   </div>
-  <!--   Core JS Files   -->
-  <script src="assets/js/core/jquery-3.7.1.min.js"></script>
-  <script src="assets/js/core/popper.min.js"></script>
-  <script src="assets/js/core/bootstrap.min.js"></script>
 
-  <!-- jQuery Scrollbar -->
-  <script src="assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
-
-
-
-
-
-
-
-  <!-- jQuery Vector Maps -->
-  <script src="assets/js/plugin/jsvectormap/jsvectormap.min.js"></script>
-  <script src="assets/js/plugin/jsvectormap/world.js"></script>
-
-
-
-  <!-- Kaiadmin JS -->
-  <script src="assets/js/kaiadmin.min.js"></script>
-
-  <!-- Kaiadmin DEMO methods, don't include it in your project! -->
-  <script src="assets/js/demo.js"></script>
+  <!-- JavaScript Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+  
   <script>
-    $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
-      type: "line",
-      height: "70",
-      width: "100%",
-      lineWidth: "2",
-      lineColor: "#177dff",
-      fillColor: "rgba(23, 125, 255, 0.14)",
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+      // Revenue Chart
+      const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+      const revenueData = {
+        labels: [<?php echo '"' . implode('","', array_column($monthlyRevenue, 'month')) . '"'; ?>],
+        datasets: [{
+          label: 'Revenue (৳)',
+          data: [<?php echo implode(',', array_column($monthlyRevenue, 'revenue')); ?>],
+          backgroundColor: 'rgba(108, 99, 255, 0.2)',
+          borderColor: 'rgba(108, 99, 255, 1)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }]
+      };
 
-    $("#lineChart2").sparkline([99, 125, 122, 105, 110, 124, 115], {
-      type: "line",
-      height: "70",
-      width: "100%",
-      lineWidth: "2",
-      lineColor: "#f3545d",
-      fillColor: "rgba(243, 84, 93, .14)",
-    });
+      new Chart(revenueCtx, {
+        type: 'line',
+        data: revenueData,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '$' + context.raw.toLocaleString('en-US', {minimumFractionDigits: 2});
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
 
-    $("#lineChart3").sparkline([105, 103, 123, 100, 95, 105, 115], {
-      type: "line",
-      height: "70",
-      width: "100%",
-      lineWidth: "2",
-      lineColor: "#ffa534",
-      fillColor: "rgba(255, 165, 52, .14)",
+      // Order Status Chart
+      const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
+      const statusData = {
+        labels: [<?php echo '"' . implode('","', array_column($revenueByStatus, 'status')) . '"'; ?>],
+        datasets: [{
+          data: [<?php echo implode(',', array_column($revenueByStatus, 'order_count')); ?>],
+          backgroundColor: [
+            'rgba(40, 167, 69, 0.7)',
+            'rgba(255, 193, 7, 0.7)',
+            'rgba(23, 162, 184, 0.7)',
+            'rgba(108, 99, 255, 0.7)',
+            'rgba(220, 53, 69, 0.7)'
+          ],
+          borderWidth: 1
+        }]
+      };
+
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: statusData,
+        options: {
+          responsive: true,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+
+      // Initialize tooltips
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
     });
   </script>
 </body>
-
 </html>

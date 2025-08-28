@@ -100,7 +100,7 @@ $total = $subtotal; // Assuming no taxes or shipping for now
                                                 <h5><?php echo $cart_item['product_name']; ?></h5>
                                             </td>
                                             <td class="shoping__cart__price">
-                                                ৳<?php echo $cart_item['product_price']; ?>
+                                                ৳<?php echo number_format($cart_item['product_price'], 2); ?>
                                             </td>
                                             <td class="shoping__cart__quantity">
                                                 <div class="quantity">
@@ -110,7 +110,7 @@ $total = $subtotal; // Assuming no taxes or shipping for now
                                                 </div>
                                             </td>
                                             <td class="shoping__cart__total">
-                                                ৳<?php echo $cart_item['product_price'] * $cart_item['quantity']; ?>
+                                                ৳<?php echo number_format($cart_item['product_price'] * $cart_item['quantity'], 2); ?>
                                             </td>
                                             <td class="shoping__cart__item__close">
                                                 <form method="POST" action="remove-from-cart.php">

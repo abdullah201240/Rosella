@@ -171,7 +171,7 @@ while ($row = $result_products->fetch_assoc()) {
                                                 </div>
                                                 <div class="latest-product__item__text">
                                                     <h6><?php echo $product['name']; ?></h6>
-                                                    <span>৳<?php echo $product['price']; ?></span>
+                                                    <span>৳<?php echo number_format($product['price'], 2); ?></span>
                                                 </div>
                                             </a>
                                         <?php endforeach; ?>
@@ -210,7 +210,7 @@ while ($row = $result_products->fetch_assoc()) {
                                         </a>
                                         <div class="product__item__text">
                                             <h6><a href="shop-details.php?id=<?php echo $product['id']; ?>"><?php echo $product['name']; ?></a></h6>
-                                            <h5>৳<?php echo $product['price']; ?></h5>
+                                            <h5>৳<?php echo number_format($product['price'], 2); ?></h5>
                                             <button class="quick-add-to-cart" data-product-id="<?php echo $product['id']; ?>" data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
                                                 <i class="fa fa-shopping-cart"></i> Add to Cart
                                             </button>

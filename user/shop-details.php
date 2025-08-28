@@ -198,7 +198,7 @@ if (isset($_POST['ajax_add_to_cart'])) {
                     <div class="product__details__text">
                         <h3><?php echo $product['name']; ?></h3>
                         
-                        <div class="product__details__price">৳<?php echo $product['price']; ?></div>
+                        <div class="product__details__price">৳<?php echo number_format($product['price'], 2); ?></div>
                         <p><?php echo $product['description']; ?></p>
                         <div class="product__details__quantity">
     <div class="quantity">
@@ -265,7 +265,7 @@ if (isset($_POST['ajax_add_to_cart'])) {
                                 <div class="product__details__tab__desc">
                                     <h6>Products Infomation</h6>
                                     <p><strong>Product Code:</strong> <?php echo $product['product_code']; ?></p>
-                                    <p><strong>Price:</strong> ৳<?php echo $product['price']; ?></p>
+                                    <p><strong>Price:</strong> ৳<?php echo number_format($product['price'], 2); ?></p>
                                     <p><strong>Weight:</strong> <?php echo $product['weight']; ?></p>
                                     <p><strong>Care Note:</strong> <?php echo $product['care_note']; ?></p>
 
@@ -305,7 +305,7 @@ if (isset($_POST['ajax_add_to_cart'])) {
                             </div>
                             <div class="product__item__text">
                                 <h6><a href="shop-details.php?id=<?php echo $related_product['id']; ?>"><?php echo $related_product['name']; ?></a></h6>
-                                <h5>৳<?php echo $related_product['price']; ?></h5>
+                                <h5>৳<?php echo number_format($related_product['price'], 2); ?></h5>
                             </div>
                         </div>
                     </div>

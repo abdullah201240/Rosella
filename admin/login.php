@@ -314,7 +314,8 @@ button,
 [type="button"],
 [type="reset"],
 [type="submit"] {
-  -webkit-appearance: button; }
+  -webkit-appearance: button;
+  appearance: button; }
 
 button:not(:disabled),
 [type="button"]:not(:disabled),
@@ -339,7 +340,8 @@ input[type="date"],
 input[type="time"],
 input[type="datetime-local"],
 input[type="month"] {
-  -webkit-appearance: listbox; }
+  -webkit-appearance: listbox;
+  appearance: listbox; }
 
 textarea {
   overflow: auto;
@@ -371,14 +373,16 @@ progress {
 
 [type="search"] {
   outline-offset: -2px;
-  -webkit-appearance: none; }
+  -webkit-appearance: none;
+  appearance: none; }
 
 [type="search"]::-webkit-search-decoration {
   -webkit-appearance: none; }
 
 ::-webkit-file-upload-button {
   font: inherit;
-  -webkit-appearance: button; }
+  -webkit-appearance: button;
+  appearance: button; }
 
 output {
   display: inline-block; }

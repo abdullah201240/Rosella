@@ -10,8 +10,8 @@ if (!isset($_SESSION['admin'])) {
 
 include '../db.php';
 
-// Fetch all orders from the database
-$sql = "SELECT * FROM orders";
+// Fetch all orders from the database, ordered by ID in descending order (newest first)
+$sql = "SELECT * FROM orders ORDER BY id DESC";
 $result = $conn->query($sql);
 ?>
 
@@ -241,7 +241,8 @@ $result = $conn->query($sql);
                                 <th>Order Notes</th>
                                 <th>Total Amount</th>
                                 <th>Products</th>
-                                <th>Status</th>
+                                <th>Order Status</th>
+                                <th>Payment Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -288,10 +289,11 @@ $result = $conn->query($sql);
 
                                                 </select>
                                             </td>
+                                            <td>" . ucfirst(htmlspecialchars($row['payment_status'] ?? 'pending')) . "</td>
                                         </tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='14'>No orders found.</td></tr>";
+                                echo "<tr><td colspan='15'>No orders found.</td></tr>";
                             }
                             ?>
                         </tbody>
