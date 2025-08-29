@@ -29,7 +29,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS user_profiles (
 $uid = (int)$_SESSION['user_id'];
 $message = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['first_name'])) {
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name = trim($_POST['last_name'] ?? '');
     $country = trim($_POST['country'] ?? '');
@@ -165,6 +165,38 @@ if ($res && $res->num_rows === 1) {
                         <a href="checkout.php" class="site-btn" style="margin-left:10px;background:#28a745;">Go to Checkout</a>
                     </div>
                 </form>
+
+                <!-- Password Change Form -->
+                <div class="mt-5">
+                    <h4>Change Password</h4>
+                    <?php
+                    if (isset($_SESSION['password_message'])) {
+                        $alert_class = $_SESSION['password_message_type'] === 'success' ? 'alert-success' : 'alert-danger';
+                        echo '<div class="alert ' . $alert_class . '" role="alert">' . $_SESSION['password_message'] . '</div>';
+                        unset($_SESSION['password_message']);
+                        unset($_SESSION['password_message_type']);
+                    }
+                    ?>
+                    <form method="POST" action="update_password.php" class="mt-4">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="checkout__input">
+                                    <p>Current Password<span>*</span></p>
+                                    <input type="password" name="current_password" required>
+                                </div>
+                                <div class="checkout__input">
+                                    <p>New Password<span>*</span></p>
+                                    <input type="password" name="new_password" required>
+                                </div>
+                                <div class="checkout__input">
+                                    <p>Confirm New Password<span>*</span></p>
+                                    <input type="password" name="confirm_password" required>
+                                </div>
+                                <button type="submit" class="site-btn">Update Password</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </section>

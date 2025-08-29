@@ -6,6 +6,18 @@ ini_set('display_errors', 1);
 // Include the database connection
 include '../db.php';
 
+// Create temp credentials table if it doesn't exist
+$conn->query("CREATE TABLE IF NOT EXISTS user_temp_credentials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    temp_password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_used BOOLEAN DEFAULT FALSE,
+    UNIQUE KEY (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)");
+
 // Start the session
 session_start();
 
@@ -147,18 +159,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Create account automatically for new email and auto-login
         $autoName = trim(($first_name . ' ' . $last_name));
-        $generatedPassword = bin2hex(random_bytes(4)); // 8 hex chars
+        $generatedPassword = bin2hex(random_bytes(8)); // Generate a random password
         $hashed = password_hash($generatedPassword, PASSWORD_BCRYPT);
         $stmtInsertUser = $conn->prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
         $stmtInsertUser->bind_param('sss', $autoName, $email, $hashed);
         if ($stmtInsertUser->execute()) {
-            $_SESSION['user_id'] = $stmtInsertUser->insert_id;
+            $user_id = (int)$stmtInsertUser->insert_id;
+            $_SESSION['user_id'] = $user_id;
             $_SESSION['user_name'] = $autoName;
-            $_SESSION['account_created'] = [
-                'email' => $email,
-                'password' => $generatedPassword
-            ];
-            $user_id = (int)$_SESSION['user_id'];
+            
+            // Store account creation details in the database
+            $stmtAccount = $conn->prepare('INSERT INTO user_temp_credentials (user_id, email, temp_password) VALUES (?, ?, ?)');
+            $stmtAccount->bind_param('iss', $user_id, $email, $generatedPassword);
+            $stmtAccount->execute();
+            $stmtAccount->close();
         } else {
             die('Error creating user account.');
         }
@@ -197,7 +211,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($stmt->execute()) {
-        // Don't clear the cart yet - we'll do this after successful payment
         // Store cart items in session for potential recovery if needed
         $session_id = $_SESSION['session_id'];
         $sql_get_cart = "SELECT * FROM carts WHERE session_id = ?";

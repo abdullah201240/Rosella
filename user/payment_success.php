@@ -1,4 +1,7 @@
 <?php
+// Start the session at the very beginning
+session_start();
+
 // Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -7,8 +10,67 @@ ini_set('display_errors', 1);
 include '../db.php';
 include '../includes/SSLCommerz.php';
 
-// Start the session
-session_start();
+// Create temp credentials table if it doesn't exist (in case it wasn't created yet)
+$conn->query("CREATE TABLE IF NOT EXISTS user_temp_credentials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    temp_password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_used BOOLEAN DEFAULT FALSE,
+    UNIQUE KEY (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)");
+
+// Check if we should show account creation details
+$account_details = null;
+
+// First try to get user_id from session
+$user_id = $_SESSION['user_id'] ?? null;
+
+// If not in session, try to get from temp_credentials using transaction ID
+if (!$user_id && !empty($_POST['tran_id'])) {
+    $tran_id = $conn->real_escape_string($_POST['tran_id']);
+    $order_query = $conn->query("SELECT user_id FROM orders WHERE payment_transaction_id = '$tran_id' LIMIT 1");
+    if ($order_query && $order_query->num_rows > 0) {
+        $order = $order_query->fetch_assoc();
+        $user_id = $order['user_id'];
+        $_SESSION['user_id'] = $user_id; // Set in session for future requests
+    }
+}
+
+if ($user_id) {
+    $user_id = (int)$user_id;
+    
+    // Get the latest temp credentials for this user
+    $stmt = $conn->prepare("SELECT email, temp_password 
+                           FROM user_temp_credentials 
+                           WHERE user_id = ? 
+                           ORDER BY created_at DESC 
+                           LIMIT 1");
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result && $result->num_rows > 0) {
+        $account_details = $result->fetch_assoc();
+        
+        // Mark as used after displaying (but only if not already used)
+        $update = $conn->prepare("UPDATE user_temp_credentials SET is_used = 1 WHERE user_id = ? AND is_used = 0");
+        $update->bind_param('i', $user_id);
+        $update->execute();
+        $update->close();
+    }
+    $stmt->close();
+
+    // Only mark as used AFTER displaying the credentials
+    if ($account_details) {
+        $update = $conn->prepare("UPDATE user_temp_credentials SET is_used = 1 WHERE user_id = ?");
+        $update->bind_param('i', $user_id);
+        $update->execute();
+        $update->close();
+    }
+}
 
 // Ensure all required columns exist in the orders table
 $conn->query("CREATE TABLE IF NOT EXISTS orders (
@@ -236,6 +298,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: white;
             text-decoration: none;
         }
+        .account-details {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
@@ -243,6 +312,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <!-- Payment Result Section Begin -->
     <section class="payment-result">
+        <?php 
+// Debug output
+if (isset($_GET['debug'])) {
+    echo '<pre>';
+    echo 'Session user_id: ' . ($_SESSION['user_id'] ?? 'not set') . "\n";
+    echo 'Account details: ' . print_r($account_details, true) . "\n";
+    echo '</pre>';
+}
+?>
+<?php if ($account_details): ?>
+        <div class="container">
+            <div class="account-details">
+                <h4><i class="fa fa-user-plus"></i> Account Created Successfully!</h4>
+                <p>An account has been created for you with the following details:</p>
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Your Login Credentials</h5>
+                                <p class="card-text"><strong>Email:</strong> <?php echo htmlspecialchars($account_details['email']); ?></p>
+                                <p class="card-text"><strong>Password:</strong> <?php echo htmlspecialchars($account_details['temp_password']); ?></p>
+                                <p class="text-muted">Please save these details for future logins. You can change your password after logging in.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
@@ -267,7 +366,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         
-                        <p>You will receive an email confirmation shortly. You can track your order in your profile.</p>
                         
                     <?php else: ?>
                         <div class="payment-icon failed-icon">

@@ -98,6 +98,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <button type="submit" class="site-btn">Login</button>
                     <a href="signup.php<?php echo isset($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : ''; ?>" class="site-btn" style="margin-left:10px;background:#6c757d;">Create Account</a>
+                    <div class="mt-3 text-center">
+                        <a href="forgot-password.php" class="text-primary">Forgot Password?</a>
+                    </div>
                 </form>
             </div>
         </div>
