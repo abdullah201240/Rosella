@@ -79,6 +79,27 @@ if ($conn->query($sql) === TRUE) {
     die("Error creating user_profiles table: " . $conn->error);
 }
 
+// Create product_reviews table if not exists
+$sql = "CREATE TABLE IF NOT EXISTS product_reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating TINYINT UNSIGNED NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_reviews_product_id (product_id),
+    INDEX idx_reviews_user_id (user_id),
+    INDEX idx_reviews_product_created (product_id, created_at)
+)";
+
+if ($conn->query($sql) === TRUE) {
+    echo "Product reviews table checked/created successfully\n";
+} else {
+    die("Error creating product_reviews table: " . $conn->error);
+}
+
 echo "\nAll migrations completed successfully!\n";
 $conn->close();
 ?>

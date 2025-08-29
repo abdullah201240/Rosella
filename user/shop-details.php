@@ -25,6 +25,48 @@ if (isset($_GET['id'])) {
 }
 ?>
 <?php
+// Handle review submission (must be before any HTML output beyond what's above)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
+    $redirectBack = 'shop-details.php?id=' . $product_id;
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: login.php?redirect=' . urlencode($redirectBack));
+        exit();
+    }
+
+    $user_id = (int)$_SESSION['user_id'];
+    $rating = isset($_POST['rating']) ? (int)$_POST['rating'] : 0;
+    $comment = isset($_POST['comment']) ? trim($_POST['comment']) : '';
+
+    if ($rating < 1 || $rating > 5) {
+        $_SESSION['review_error'] = 'Please select a rating between 1 and 5.';
+        header('Location: ' . $redirectBack . '#reviews');
+        exit();
+    }
+
+    if (strlen($comment) > 2000) {
+        $_SESSION['review_error'] = 'Comment is too long.';
+        header('Location: ' . $redirectBack . '#reviews');
+        exit();
+    }
+
+    $sql = "INSERT INTO product_reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)";
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param('iiis', $product_id, $user_id, $rating, $comment);
+        if ($stmt->execute()) {
+            $_SESSION['review_success'] = 'Thank you for your review!';
+        } else {
+            $_SESSION['review_error'] = 'Could not save your review. Please try again.';
+        }
+        $stmt->close();
+    } else {
+        $_SESSION['review_error'] = 'System error. Please try again later.';
+    }
+
+    header('Location: ' . $redirectBack . '#reviews');
+    exit();
+}
+?>
+<?php
 // Fetch related products (products in the same category, excluding the current product)
 $category_id = $product['category_id']; // Get the current product's category ID
 $sql_related = "SELECT * FROM products WHERE category_id = $category_id  LIMIT 4"; // Limit to 4 related products
@@ -53,6 +95,34 @@ if (isset($_GET['id'])) {
     }
 } else {
     die("Invalid request.");
+}
+
+// Fetch reviews summary and list
+$avg_rating = 0;
+$reviews_count = 0;
+$reviews = [];
+
+// Average and count
+if ($stmt = $conn->prepare('SELECT COALESCE(AVG(rating),0) AS avg_rating, COUNT(*) AS cnt FROM product_reviews WHERE product_id = ?')) {
+    $stmt->bind_param('i', $product_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($row = $res->fetch_assoc()) {
+        $avg_rating = (float)$row['avg_rating'];
+        $reviews_count = (int)$row['cnt'];
+    }
+    $stmt->close();
+}
+
+// Latest 10 reviews with user name
+if ($stmt = $conn->prepare('SELECT pr.rating, pr.comment, pr.created_at, u.name AS user_name FROM product_reviews pr JOIN users u ON u.id = pr.user_id WHERE pr.product_id = ? ORDER BY pr.created_at DESC LIMIT 10')) {
+    $stmt->bind_param('i', $product_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $reviews[] = $row;
+    }
+    $stmt->close();
 }
 
 // Handle Add to Cart via AJAX
@@ -252,6 +322,9 @@ if (isset($_POST['ajax_add_to_cart'])) {
                                 <a class="nav-link" data-toggle="tab" href="#tabs-2" role="tab"
                                     aria-selected="false">Information</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#tabs-3" role="tab" aria-selected="false" id="reviews">Reviews (<?php echo (int)$reviews_count; ?>)</a>
+                            </li>
                             
                         </ul>
                         <div class="tab-content">
@@ -270,6 +343,65 @@ if (isset($_POST['ajax_add_to_cart'])) {
                                     <p><strong>Care Note:</strong> <?php echo $product['care_note']; ?></p>
 
 
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="tabs-3" role="tabpanel">
+                                <div class="product__details__tab__desc">
+                                    <h6>Customer Reviews</h6>
+                                    <p><strong>Average Rating:</strong> <?php echo number_format($avg_rating, 1); ?>/5 (<?php echo (int)$reviews_count; ?> reviews)</p>
+                                    <?php if (isset($_SESSION['review_success'])): ?>
+                                        <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['review_success']); unset($_SESSION['review_success']); ?></div>
+                                    <?php endif; ?>
+                                    <?php if (isset($_SESSION['review_error'])): ?>
+                                        <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['review_error']); unset($_SESSION['review_error']); ?></div>
+                                    <?php endif; ?>
+
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <form method="POST" action="shop-details.php?id=<?php echo $product_id; ?>#reviews" style="margin-bottom:20px;">
+                                        <input type="hidden" name="submit_review" value="1">
+                                        <div class="form-group">
+                                            <label for="rating">Your Rating</label>
+                                            <select name="rating" id="rating" class="form-control" required>
+                                                <option value="">Select rating</option>
+                                                <option value="5">5 - Excellent</option>
+                                                <option value="4">4 - Very Good</option>
+                                                <option value="3">3 - Good</option>
+                                                <option value="2">2 - Fair</option>
+                                                <option value="1">1 - Poor</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="comment">Your Review (optional)</label>
+                                            <textarea name="comment" id="comment" class="form-control" rows="3" maxlength="2000" placeholder="Share your experience..."></textarea>
+                                        </div>
+                                        <button type="submit" class="site-btn">Submit Review</button>
+                                    </form>
+                                    <?php else: ?>
+                                        <p>Please <a href="login.php?redirect=<?php echo urlencode('shop-details.php?id=' . $product_id . '#reviews'); ?>">login</a> to write a review.</p>
+                                    <?php endif; ?>
+
+                                    <?php if (count($reviews) > 0): ?>
+                                        <?php foreach ($reviews as $rev): ?>
+                                            <div class="review-item" style="border-bottom:1px solid #eee;padding:10px 0;">
+                                                <div style="font-weight:bold;">
+                                                    <?php echo htmlspecialchars($rev['user_name']); ?>
+                                                    <span style="color:#f39c12;margin-left:8px;">
+                                                        <?php echo str_repeat('★', (int)$rev['rating']); ?><?php echo str_repeat('☆', 5 - (int)$rev['rating']); ?>
+                                                    </span>
+                                                </div>
+                                                <div style="font-size:12px;color:#777;">
+                                                    <?php echo htmlspecialchars(date('M j, Y', strtotime($rev['created_at']))); ?>
+                                                </div>
+                                                <?php if (!empty($rev['comment'])): ?>
+                                                <div style="margin-top:5px;">
+                                                    <?php echo nl2br(htmlspecialchars($rev['comment'])); ?>
+                                                </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p>No reviews yet. Be the first to review this product.</p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                            
